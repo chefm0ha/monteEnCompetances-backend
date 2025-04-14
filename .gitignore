@@ -1,0 +1,15 @@
+# Mac stuff
+.DS_Store
+
+# IntelliJ stuff
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/usage.statistics.xml
+.idea/dictionaries
+.idea/shelf
+*.iws
+out/
+
+# Build folders
+target/
+build/
