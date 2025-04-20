@@ -1,0 +1,4 @@
+### GET request to get all collaborateurs
+GET http://localhost:4003/collaborateurs
+
+###

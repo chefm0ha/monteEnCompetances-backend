@@ -1,0 +1,14 @@
+### Login request
+POST http://localhost:4003/collaborateurs
+Content-Type: application/json
+
+{
+  "email" : "maha@application.com" ,
+  "password": "password123",
+  "role" : "COLLABORATEUR" ,
+  "firstName" : "Maha" ,
+  "lastName": "Benabbou" ,
+  "poste" : "it-departement"
+}
+
+###

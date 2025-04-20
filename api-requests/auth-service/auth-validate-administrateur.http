@@ -1,0 +1,4 @@
+### GET request to example server
+GET http://localhost:4002/auth/validate-admin
+Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJjb2xsYWJvcmF0ZXVyQGFwcGxpY2F0aW9uLmNvbSIsInJvbGUiOiJDT0xMQUJPUkFURVVSIiwiaWF0IjoxNzQzODg1MzQ4LCJleHAiOjE3NDM5MjEzNDh9.pjESYDhXvAQJVw51gR7XkViNr5WgPKi-m8UpQv_0mycs6JHigvGzucvGTboSZ_jW
+###

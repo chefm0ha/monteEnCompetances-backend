@@ -1,0 +1,10 @@
+### Login request
+POST http://localhost:4002/auth/login
+Content-Type: application/json
+
+{
+  "email" : "admin@application.com" ,
+  "password": "password123"
+}
+
+###

@@ -1,0 +1,44 @@
+<component name="ProjectRunConfigurationManager">
+    <configuration default="false" name="conpetancesplatforme-db" type="docker-deploy" factoryName="docker-image" server-name="Docker">
+        <deployment type="docker-image">
+            <settings>
+                <option name="imageTag" value="postgres:latest" />
+                <option name="containerName" value="conpetancesplatforme-db" />
+                <option name="envVars">
+                    <list>
+                        <DockerEnvVarImpl>
+                            <option name="name" value="POSTGRES_DB" />
+                            <option name="value" value="montencompetdb" />
+                        </DockerEnvVarImpl>
+                        <DockerEnvVarImpl>
+                            <option name="name" value="POSTGRES_PASSWORD" />
+                            <option name="value" value="password" />
+                        </DockerEnvVarImpl>
+                        <DockerEnvVarImpl>
+                            <option name="name" value="POSTGRES_USER" />
+                            <option name="value" value="admin" />
+                        </DockerEnvVarImpl>
+                    </list>
+                </option>
+                <option name="portBindings">
+                    <list>
+                        <DockerPortBindingImpl>
+                            <option name="containerPort" value="5432" />
+                            <option name="hostPort" value="5432" />
+                        </DockerPortBindingImpl>
+                    </list>
+                </option>
+                <option name="commandLineOptions" value="--network competnetwork" />
+                <option name="volumeBindings">
+                    <list>
+                        <DockerVolumeBindingImpl>
+                            <option name="containerPath" value="/var/lib/postgresql/data" />
+                            <option name="hostPath" value="$PROJECT_DIR$/../MonteeEnCompetencesDB" />
+                        </DockerVolumeBindingImpl>
+                    </list>
+                </option>
+            </settings>
+        </deployment>
+        <method v="2" />
+    </configuration>
+</component>
