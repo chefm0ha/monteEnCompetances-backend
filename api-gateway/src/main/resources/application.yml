@@ -12,11 +12,11 @@ spring:
           filters:
             - StripPrefix=0
 
-        # Route for /api/patients/** to patient-service
-        - id: patient-service-route
+        # Route for /api/collaborateurs/** to patient-service
+        - id: collaborateurs-service-route
           uri: http://localhost:4003
           predicates:
-            - Path=/api/patients/**
+            - Path=/api/collaborateurs/**
           filters:
             - StripPrefix=1
             - AdminJwtValidation
