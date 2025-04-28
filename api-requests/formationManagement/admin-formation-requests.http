@@ -1,0 +1,268 @@
+### Configuration de base
+@baseUrl = http://localhost:4004/api/admin/formations
+@contentType = application/json
+
+### Variables pour les tests
+@formationId = 1
+@moduleId = 1
+@supportId = 1
+@quizId = 1
+@questionId = 1
+@choixId = 1
+@collaborateurId = 0733ab8f-f035-402b-b7f1-89d714db51cd
+
+###
+### Gestion des Formations
+###
+
+### Récupérer toutes les formations
+GET {{baseUrl}}
+
+### Récupérer une formation par son ID
+GET {{baseUrl}}/{{formationId}}
+
+### Récupérer des formations par type
+GET {{baseUrl}}/type/TECHNIQUE
+
+### Rechercher des formations par mot-clé
+GET {{baseUrl}}/search?keyword=java
+
+### Créer une nouvelle formation
+POST {{baseUrl}}
+Content-Type: {{contentType}}
+
+{
+  "titre": "Introduction à Spring Boot",
+  "description": "Une formation complète sur les fondamentaux de Spring Boot",
+  "type": "TECHNIQUE"
+}
+
+### Créer une formation avec image (utiliser un client comme Postman pour ce test)
+# POST {{baseUrl}}/with-image
+# Content-Type: multipart/form-data
+#
+# --boundary
+# Content-Disposition: form-data; name="formation"
+# Content-Type: application/json
+#
+# {
+#   "titre": "Introduction à Spring Boot avec image",
+#   "description": "Une formation complète avec image",
+#   "type": "TECHNIQUE"
+# }
+# --boundary
+# Content-Disposition: form-data; name="image"; filename="spring-boot-logo.png"
+# Content-Type: image/png
+#
+# < ./spring-boot-logo.png
+# --boundary--
+
+### Mettre à jour une formation
+PUT {{baseUrl}}/{{formationId}}
+Content-Type: {{contentType}}
+
+{
+  "titre": "Introduction à Spring Boot (Mise à jour)",
+  "description": "Formation mise à jour sur Spring Boot",
+  "type": "TECHNIQUE"
+}
+
+### Supprimer une formation
+DELETE {{baseUrl}}/{{formationId}}
+
+###
+### Gestion des Modules
+###
+
+### Récupérer les modules d'une formation
+GET {{baseUrl}}/{{formationId}}/modules
+
+### Récupérer un module par son ID
+GET {{baseUrl}}/modules/{{moduleId}}
+
+### Créer un nouveau module
+POST {{baseUrl}}/{{formationId}}/modules
+Content-Type: {{contentType}}
+
+{
+  "titre": "Configuration de Spring Boot",
+  "description": "Apprendre à configurer une application Spring Boot"
+}
+
+### Mettre à jour un module
+PUT {{baseUrl}}/modules/{{moduleId}}
+Content-Type: {{contentType}}
+
+{
+  "titre": "Configuration avancée de Spring Boot",
+  "description": "Configuration avancée et personnalisation"
+}
+
+### Supprimer un module
+DELETE {{baseUrl}}/modules/{{moduleId}}
+
+###
+### Gestion des Supports
+###
+
+### Récupérer les supports d'un module
+GET {{baseUrl}}/modules/{{moduleId}}/supports
+
+### Créer un support avec fichier (utiliser un client comme Postman pour ce test)
+# POST {{baseUrl}}/modules/{{moduleId}}/supports
+# Content-Type: multipart/form-data
+#
+# --boundary
+# Content-Disposition: form-data; name="support"
+# Content-Type: application/json
+#
+# {
+#   "type": "PDF",
+#   "lien": ""
+# }
+# --boundary
+# Content-Disposition: form-data; name="file"; filename="spring-boot-guide.pdf"
+# Content-Type: application/pdf
+#
+# < ./spring-boot-guide.pdf
+# --boundary--
+
+### Mettre à jour un support (utiliser un client comme Postman pour ce test)
+# PUT {{baseUrl}}/supports/{{supportId}}
+# Content-Type: multipart/form-data
+#
+# --boundary
+# Content-Disposition: form-data; name="support"
+# Content-Type: application/json
+#
+# {
+#   "type": "PDF",
+#   "lien": ""
+# }
+# --boundary
+# Content-Disposition: form-data; name="file"; filename="spring-boot-guide-updated.pdf"
+# Content-Type: application/pdf
+#
+# < ./spring-boot-guide-updated.pdf
+# --boundary--
+
+### Supprimer un support
+DELETE {{baseUrl}}/supports/{{supportId}}
+
+###
+### Gestion des Quiz
+###
+
+### Récupérer les quiz d'un module
+GET {{baseUrl}}/modules/{{moduleId}}/quizzes
+
+### Récupérer un quiz par son ID
+GET {{baseUrl}}/quizzes/{{quizId}}
+
+### Créer un nouveau quiz
+POST {{baseUrl}}/modules/{{moduleId}}/quizzes
+Content-Type: {{contentType}}
+
+{
+  "titre": "Quiz sur Spring Boot"
+}
+
+### Mettre à jour un quiz
+PUT {{baseUrl}}/quizzes/{{quizId}}
+Content-Type: {{contentType}}
+
+{
+  "titre": "Quiz avancé sur Spring Boot"
+}
+
+### Supprimer un quiz
+DELETE {{baseUrl}}/quizzes/{{quizId}}
+
+###
+### Gestion des Questions
+###
+
+### Récupérer les questions d'un quiz
+GET {{baseUrl}}/quizzes/{{quizId}}/questions
+
+### Créer une nouvelle question
+POST {{baseUrl}}/quizzes/{{quizId}}/questions
+Content-Type: {{contentType}}
+
+{
+  "contenu": "Quelle annotation permet de définir un bean Spring?"
+}
+
+### Mettre à jour une question
+PUT {{baseUrl}}/questions/{{questionId}}
+Content-Type: {{contentType}}
+
+{
+  "contenu": "Quelle annotation permet de définir un bean Spring dans une configuration Java?"
+}
+
+### Supprimer une question
+DELETE {{baseUrl}}/questions/{{questionId}}
+
+###
+### Gestion des Choix
+###
+
+### Récupérer les choix d'une question
+GET {{baseUrl}}/questions/{{questionId}}/choix
+
+### Créer un nouveau choix
+POST {{baseUrl}}/questions/{{questionId}}/choix
+Content-Type: {{contentType}}
+
+{
+  "contenu": "@Bean",
+  "estCorrect": true
+}
+
+### Créer plusieurs choix
+POST {{baseUrl}}/questions/{{questionId}}/choix/multiple
+Content-Type: {{contentType}}
+
+[
+  {
+    "contenu": "@Component",
+    "estCorrect": true
+  },
+  {
+    "contenu": "@Controller",
+    "estCorrect": false
+  },
+  {
+    "contenu": "@SpringBean",
+    "estCorrect": false
+  }
+]
+
+### Mettre à jour un choix
+PUT {{baseUrl}}/choix/{{choixId}}
+Content-Type: {{contentType}}
+
+{
+  "contenu": "@Component",
+  "estCorrect": true
+}
+
+### Supprimer un choix
+DELETE {{baseUrl}}/choix/{{choixId}}
+
+###
+### Gestion des Inscriptions
+###
+
+### Récupérer les participants d'une formation
+GET {{baseUrl}}/formations/{{formationId}}/participants
+
+### Inscrire un collaborateur à une formation
+POST {{baseUrl}}/formations/{{formationId}}/participants/{{collaborateurId}}
+
+### Désinscrire un collaborateur d'une formation
+DELETE {{baseUrl}}/formations/{{formationId}}/participants/{{collaborateurId}}
+
+### Obtenir les statistiques d'une formation
+GET {{baseUrl}}/formations/{{formationId}}/stats

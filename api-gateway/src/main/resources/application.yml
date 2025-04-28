@@ -6,7 +6,7 @@ spring:
     gateway:
       routes:
         - id: auth-service-route
-          uri: http://localhost:4001
+          uri: http://localhost:4002
           predicates:
             - Path=/auth/**
           filters:

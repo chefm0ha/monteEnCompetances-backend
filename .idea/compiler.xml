@@ -8,6 +8,7 @@
         <outputRelativeToContentRoot value="true" />
         <module name="api-gateway" />
         <module name="auth-service" />
+        <module name="formationManagement-service" />
         <module name="collaborateur-management-service" />
       </profile>
     </annotationProcessing>
@@ -17,6 +18,7 @@
       <module name="api-gateway" options="-parameters" />
       <module name="auth-service" options="-parameters" />
       <module name="collaborateur-management-service" options="-parameters" />
+      <module name="formationManagement-service" options="-parameters" />
     </option>
   </component>
 </project>
