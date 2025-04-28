@@ -21,9 +21,8 @@ public class CollaborateurMapper {
         }
 
         CollaborateurDTO dto = new CollaborateurDTO();
+        dto.setId(collaborateur.getId().toString());
         dto.setEmail(collaborateur.getEmail());
-        // On ne copie pas le mot de passe pour des raisons de sécurité
-        dto.setPassword(null);
         dto.setRole(collaborateur.getRole());
         dto.setFirstName(collaborateur.getFirstName());
         dto.setLastName(collaborateur.getLastName());

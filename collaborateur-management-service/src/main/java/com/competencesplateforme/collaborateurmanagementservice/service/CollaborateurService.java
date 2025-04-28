@@ -5,8 +5,10 @@ import com.competencesplateforme.collaborateurmanagementservice.mapper.Collabora
 import com.competencesplateforme.collaborateurmanagementservice.model.Collaborateur;
 import com.competencesplateforme.collaborateurmanagementservice.repository.CollaborateurRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
 import java.util.Optional;
@@ -17,12 +19,14 @@ public class CollaborateurService {
 
     private final CollaborateurRepository collaborateurRepository;
     private final CollaborateurMapper collaborateurMapper;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
     public CollaborateurService(CollaborateurRepository collaborateurRepository,
                                 CollaborateurMapper collaborateurMapper) {
         this.collaborateurRepository = collaborateurRepository;
         this.collaborateurMapper = collaborateurMapper;
+        this.passwordEncoder = new BCryptPasswordEncoder();
     }
 
     /**
@@ -32,6 +36,11 @@ public class CollaborateurService {
      */
     @Transactional
     public CollaborateurDTO createCollaborateur(CollaborateurDTO collaborateurDTO) {
+        // Encode the password before saving
+        if (collaborateurDTO.getPassword() != null) {
+            collaborateurDTO.setPassword(passwordEncoder.encode(collaborateurDTO.getPassword()));
+        }
+        collaborateurDTO.setRole("COLLABORATEUR");
         Collaborateur collaborateur = collaborateurMapper.toEntity(collaborateurDTO);
         collaborateur = collaborateurRepository.save(collaborateur);
         return collaborateurMapper.toDTO(collaborateur);
@@ -56,6 +65,12 @@ public class CollaborateurService {
     public Optional<CollaborateurDTO> getCollaborateurById(UUID id) {
         return collaborateurRepository.findById(id)
                 .map(collaborateurMapper::toDTO);
+    }
+
+
+    @Transactional(readOnly = true)
+    public Optional<Collaborateur> getCollaborateurNotDtoById(UUID id) {
+        return collaborateurRepository.findById(id);
     }
 
     /**
@@ -95,6 +110,18 @@ public class CollaborateurService {
                     return collaborateurMapper.toDTO(updatedCollaborateur);
                 });
     }
+
+
+    @Transactional
+    public CollaborateurDTO updateCollaborateur(Collaborateur collaborateur) {
+        collaborateurRepository.save(collaborateur) ;
+        return collaborateurMapper.toDTO(collaborateur);
+    }
+
+
+
+
+
 
     /**
      * Supprime un collaborateur

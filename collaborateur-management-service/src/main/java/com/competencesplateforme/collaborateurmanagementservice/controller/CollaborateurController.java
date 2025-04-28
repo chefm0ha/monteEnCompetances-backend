@@ -1,12 +1,15 @@
 package com.competencesplateforme.collaborateurmanagementservice.controller;
 
 import com.competencesplateforme.collaborateurmanagementservice.dto.CollaborateurDTO;
+import com.competencesplateforme.collaborateurmanagementservice.model.Collaborateur;
 import com.competencesplateforme.collaborateurmanagementservice.service.CollaborateurService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,10 +21,12 @@ import java.util.UUID;
 public class CollaborateurController {
 
     private final CollaborateurService collaborateurService;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    public CollaborateurController(CollaborateurService collaborateurService) {
+    public CollaborateurController(CollaborateurService collaborateurService ,PasswordEncoder passwordEncoder) {
         this.collaborateurService = collaborateurService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     /**
@@ -96,9 +101,37 @@ public class CollaborateurController {
     public ResponseEntity<CollaborateurDTO> updateCollaborateur(
             @PathVariable UUID id,
             @RequestBody CollaborateurDTO collaborateurDTO) {
-        return collaborateurService.updateCollaborateur(id, collaborateurDTO)
-                .map(updatedCollaborateur -> new ResponseEntity<>(updatedCollaborateur, HttpStatus.OK))
-                .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
+
+        if(collaborateurService.getCollaborateurNotDtoById(id).isPresent()){
+            Collaborateur collaborateur = collaborateurService.getCollaborateurNotDtoById(id).get() ;
+
+            if(collaborateurDTO.getEmail() != null) {
+                collaborateur.setEmail(collaborateurDTO.getEmail());
+            }
+
+            if(collaborateurDTO.getFirstName() != null) {
+                collaborateur.setFirstName(collaborateurDTO.getFirstName());
+            }
+
+            if(collaborateurDTO.getLastName() != null) {
+                collaborateur.setLastName(collaborateurDTO.getLastName());
+            }
+
+            if(collaborateurDTO.getPoste() != null) {
+                collaborateur.setPoste(collaborateurDTO.getPoste());
+            }
+
+            if(collaborateurDTO.getPassword() != null) {
+                collaborateur.setPassword(passwordEncoder.encode(collaborateurDTO.getPassword()));
+            }
+
+            ;
+
+            return new ResponseEntity<>(collaborateurService.updateCollaborateur(collaborateur) ,
+                    HttpStatus.NOT_FOUND);
+        }else {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
     }
 
     /**

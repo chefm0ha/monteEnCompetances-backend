@@ -3,6 +3,7 @@ package com.competencesplateforme.collaborateurmanagementservice.dto;
 import java.util.UUID;
 
 public class CollaborateurDTO {
+    private String id;
     private String email;
     private String password;
     private String role;
@@ -14,8 +15,9 @@ public class CollaborateurDTO {
     public CollaborateurDTO() {
     }
 
-    public CollaborateurDTO( String email, String password, String role,
+    public CollaborateurDTO( String id ,String email, String password, String role,
                             String firstName, String lastName, String poste) {
+        this.id = id;
         this.email = email;
         this.password = password;
         this.role = role;
@@ -23,6 +25,17 @@ public class CollaborateurDTO {
         this.lastName = lastName;
         this.poste = poste;
     }
+
+    public CollaborateurDTO( String email, String password, String role,
+                             String firstName, String lastName, String poste) {
+        this.email = email;
+        this.password = password;
+        this.role = role;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.poste = poste;
+    }
+
 
     // Getters et Setters
 
@@ -72,5 +85,13 @@ public class CollaborateurDTO {
 
     public void setPoste(String poste) {
         this.poste = poste;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 }

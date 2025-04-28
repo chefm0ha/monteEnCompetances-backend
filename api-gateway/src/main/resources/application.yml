@@ -5,14 +5,28 @@ spring:
   cloud:
     gateway:
       routes:
+
+ #---------------------------------------------------------------------------------------------------------------------# swagger-ui/index.html
+
+        # For authentication
         - id: auth-service-route
           uri: http://localhost:4002
           predicates:
             - Path=/auth/**
+
+        # For doc authentication
+        - id: doc-auth-service-route
+          uri: http://localhost:4002
+          predicates:
+            - Path=/api-doc/auth/
           filters:
-            - StripPrefix=0
+            - SetPath=/v3/api-docs
 
         # Route for /api/collaborateurs/** to patient-service
+        - id: collaborateurs-service-route
+#---------------------------------------------------------------------------------------------------------------------#
+
+        # Route for /api/collaborateurs/** to collaborateur
         - id: collaborateurs-service-route
           uri: http://localhost:4003
           predicates:
@@ -21,10 +35,39 @@ spring:
             - StripPrefix=1
             - AdminJwtValidation
 
-        # Route for /api/docs/patients to patient-service /v3/api-docs
-        - id: api-docs-patient-route
+        # Route for /api/docs/collaborateurs to collaborateurs-service /v3/api-docs
+        - id: api-docs-collaborateurs-route
           uri: http://localhost:4003
           predicates:
-            - Path=/api-docs/patients
+            - Path=/api-docs/collaborateurs
           filters:
-            - RewritePath=/api-docs/patients,/v3/api-docs
+            - SetPath=/v3/api-docs
+
+#---------------------------------------------------------------------------------------------------------------------#
+
+        # Routes for Admin Formations Management
+        - id: api-admin-formation-management
+          uri: http://localhost:4004
+          predicates:
+            - Path=/api/admin/formations/**
+          filters:
+            - AdminJwtValidation
+
+
+        # Routes for Admin Formations Management
+        - id: api-collaborateur-formation-management
+          uri: http://localhost:4004
+          predicates:
+            - Path=/api/collaborateur/formations/**
+          filters:
+            - CollaborateurJwtValidation
+
+        # Route for /api/docs/collaborateurs to collaborateurs-service /v3/api-docs
+        - id: api-docs-formation-management-route
+          uri: http://localhost:4004
+          predicates:
+            - Path=/api-docs/formations
+          filters:
+            - RewritePath=/api-docs/formations,/v3/api-docs
+
+#---------------------------------------------------------------------------------------------------------------------#
