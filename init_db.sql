@@ -40,7 +40,9 @@ CREATE TABLE formations (
                             id SERIAL PRIMARY KEY,
                             titre VARCHAR(255),
                             description TEXT,
-                            type VARCHAR(50)
+                            type VARCHAR(50),
+                            lien_photo VARCHAR(255),
+                            duree DECIMAL(2,1)
 );
 
 CREATE TABLE collaborateurs_formations (

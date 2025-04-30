@@ -10,18 +10,20 @@ public class FormationDTO {
     private String description;
     private String type;
     private String lienPhoto;
+    private Double duree;
     private Set<ModuleDTO> modules = new HashSet<>();
 
     // Constructeurs
     public FormationDTO() {
     }
 
-    public FormationDTO(Integer id, String titre, String description, String type, String lienPhoto) {
+    public FormationDTO(Integer id, String titre, String description, String type, String lienPhoto, Double duree) {
         this.id = id;
         this.titre = titre;
         this.description = description;
         this.type = type;
         this.lienPhoto = lienPhoto;
+        this.duree = duree;
     }
 
     // Getters et Setters
@@ -71,5 +73,22 @@ public class FormationDTO {
 
     public void setModules(Set<ModuleDTO> modules) {
         this.modules = modules;
+    }
+
+    public Double getDuree() { return duree; }
+
+    public void setDuree(Double duree) { this.duree = duree; }
+
+    @Override
+    public String toString() {
+        return "FormationDTO{" +
+                "id=" + id +
+                ", titre='" + titre + '\'' +
+                ", description='" + description + '\'' +
+                ", type='" + type + '\'' +
+                ", lienPhoto='" + lienPhoto + '\'' +
+                ", duree=" + duree +
+                ", modules=" + modules +
+                '}';
     }
 }

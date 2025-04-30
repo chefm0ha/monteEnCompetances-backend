@@ -6,6 +6,7 @@ import com.competencesplateforme.collaborateurmanagementservice.service.Collabor
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -13,6 +14,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @RestController
@@ -36,9 +38,14 @@ public class CollaborateurController {
      */
     @PostMapping
     @Operation(summary = "Creating Collaborateur as user")
-    public ResponseEntity<CollaborateurDTO> createCollaborateur(@RequestBody CollaborateurDTO collaborateurDTO) {
-        CollaborateurDTO createdCollaborateur = collaborateurService.createCollaborateur(collaborateurDTO);
-        return new ResponseEntity<>(createdCollaborateur, HttpStatus.CREATED);
+    public ResponseEntity<?> createCollaborateur(@RequestBody CollaborateurDTO collaborateurDTO) {
+        try {
+            CollaborateurDTO createdCollaborateur = collaborateurService.createCollaborateur(collaborateurDTO);
+            return new ResponseEntity<>(createdCollaborateur, HttpStatus.CREATED);
+        } catch (DataIntegrityViolationException ex) {
+            String errorMessage = "Email " + collaborateurDTO.getEmail() + " already exists.";
+            return new ResponseEntity<>(errorMessage, HttpStatus.CONFLICT);
+        }
     }
 
     /**
@@ -98,41 +105,48 @@ public class CollaborateurController {
      */
     @PutMapping("/{id}")
     @Operation(summary = "Update Collaborateur - By ID")
-    public ResponseEntity<CollaborateurDTO> updateCollaborateur(
+    public ResponseEntity<?> updateCollaborateur(
             @PathVariable UUID id,
             @RequestBody CollaborateurDTO collaborateurDTO) {
 
-        if(collaborateurService.getCollaborateurNotDtoById(id).isPresent()){
-            Collaborateur collaborateur = collaborateurService.getCollaborateurNotDtoById(id).get() ;
+        Optional<Collaborateur> optionalCollaborateur = collaborateurService.getCollaborateurNotDtoById(id);
 
-            if(collaborateurDTO.getEmail() != null) {
+        if (optionalCollaborateur.isPresent()) {
+            Collaborateur collaborateur = optionalCollaborateur.get();
+
+            if (collaborateurDTO.getEmail() != null) {
                 collaborateur.setEmail(collaborateurDTO.getEmail());
             }
 
-            if(collaborateurDTO.getFirstName() != null) {
+            if (collaborateurDTO.getFirstName() != null) {
                 collaborateur.setFirstName(collaborateurDTO.getFirstName());
             }
 
-            if(collaborateurDTO.getLastName() != null) {
+            if (collaborateurDTO.getLastName() != null) {
                 collaborateur.setLastName(collaborateurDTO.getLastName());
             }
 
-            if(collaborateurDTO.getPoste() != null) {
+            if (collaborateurDTO.getPoste() != null) {
                 collaborateur.setPoste(collaborateurDTO.getPoste());
             }
 
-            if(collaborateurDTO.getPassword() != null) {
+            if (collaborateurDTO.getPassword() != null) {
                 collaborateur.setPassword(passwordEncoder.encode(collaborateurDTO.getPassword()));
             }
 
-            ;
-
-            return new ResponseEntity<>(collaborateurService.updateCollaborateur(collaborateur) ,
-                    HttpStatus.NOT_FOUND);
-        }else {
+            try {
+                CollaborateurDTO updated = collaborateurService.updateCollaborateur(collaborateur);
+                return new ResponseEntity<>(updated, HttpStatus.OK);
+            } catch (DataIntegrityViolationException ex) {
+                // Check if it's about the email
+                String errorMessage = "Email " + collaborateurDTO.getEmail() + " already exists.";
+                return new ResponseEntity<>(errorMessage, HttpStatus.CONFLICT);
+            }
+        } else {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
+
 
     /**
      * Supprime un collaborateur

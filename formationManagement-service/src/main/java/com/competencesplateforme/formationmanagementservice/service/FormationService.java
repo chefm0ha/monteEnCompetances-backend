@@ -25,6 +25,11 @@ public class FormationService {
         this.fileStorageService = fileStorageService;
     }
 
+    @Transactional(readOnly = true)
+    public List<Formation> getAllFormationsWithModules() {
+        return formationRepository.findAllWithModules();
+    }
+
     /**
      * Récupère toutes les formations
      */

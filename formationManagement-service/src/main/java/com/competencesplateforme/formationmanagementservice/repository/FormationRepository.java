@@ -16,4 +16,7 @@ public interface FormationRepository extends JpaRepository<Formation, Integer> {
 
     @Query("SELECT f FROM Formation f WHERE LOWER(f.titre) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(f.description) LIKE LOWER(CONCAT('%', :keyword, '%'))")
     List<Formation> searchFormations(String keyword);
+
+    @Query("SELECT DISTINCT f FROM Formation f LEFT JOIN FETCH f.modules")
+    List<Formation> findAllWithModules();
 }

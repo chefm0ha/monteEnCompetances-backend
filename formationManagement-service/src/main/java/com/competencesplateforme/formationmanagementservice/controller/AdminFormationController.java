@@ -108,7 +108,9 @@ public class AdminFormationController {
 
     @PostMapping //tested
     public ResponseEntity<FormationDTO> createFormation(@RequestBody FormationDTO formationDTO) {
+        System.out.println(formationDTO);
         Formation formation = formationMapper.toEntity(formationDTO);
+        System.out.println(formation);
         Formation savedFormation = formationService.createFormation(formation);
         return ResponseEntity.status(HttpStatus.CREATED).body(formationMapper.toDTO(savedFormation));
     }
@@ -146,6 +148,13 @@ public class AdminFormationController {
     public ResponseEntity<Void> deleteFormation(@PathVariable Integer id) {
         boolean deleted = formationService.deleteFormation(id);
         return deleted ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
+    }
+
+    @GetMapping("/summary")
+    public ResponseEntity<List<FormationSummaryDTO>> getAllFormationsSummary() {
+        List<Formation> formations = formationService.getAllFormationsWithModules();
+        List<FormationSummaryDTO> formationSummaryDTOs = formationMapper.toSummaryDTOList(formations);
+        return ResponseEntity.ok(formationSummaryDTOs);
     }
 
     // ======== GESTION DES MODULES ========

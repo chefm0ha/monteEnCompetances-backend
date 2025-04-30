@@ -34,7 +34,8 @@ Content-Type: {{contentType}}
 {
   "titre": "Introduction à Spring Boot",
   "description": "Une formation complète sur les fondamentaux de Spring Boot",
-  "type": "TECHNIQUE"
+  "type": "TECHNIQUE",
+  "duree": 9.5
 }
 
 ### Créer une formation avec image (utiliser un client comme Postman pour ce test)

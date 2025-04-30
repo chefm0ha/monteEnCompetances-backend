@@ -11,6 +11,7 @@ public class FormationSummaryDTO {
     private String titre;
     private String type;
     private String lienPhoto;
+    private Double duree;
     private Long nombreModules;
     private Long nombreParticipants;
     private BigDecimal progressionMoyenne;
@@ -20,11 +21,12 @@ public class FormationSummaryDTO {
     public FormationSummaryDTO() {
     }
 
-    public FormationSummaryDTO(Integer id, String titre, String type, String lienPhoto) {
+    public FormationSummaryDTO(Integer id, String titre, String type, String lienPhoto, Double duree) {
         this.id = id;
         this.titre = titre;
         this.type = type;
         this.lienPhoto = lienPhoto;
+        this.duree = duree;
     }
 
     // Getters et Setters
@@ -59,6 +61,10 @@ public class FormationSummaryDTO {
     public void setLienPhoto(String lienPhoto) {
         this.lienPhoto = lienPhoto;
     }
+
+    public Double getDuree() { return duree; }
+
+    public void setDuree(Double duree) { this.duree = duree; }
 
     public Long getNombreModules() {
         return nombreModules;

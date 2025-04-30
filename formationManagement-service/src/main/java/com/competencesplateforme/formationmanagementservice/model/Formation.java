@@ -24,6 +24,9 @@ public class Formation {
     @Column(name = "lien_photo", columnDefinition = "TEXT")
     private String lienPhoto;
 
+    @Column(name = "duree")
+    private Double duree;
+
     @OneToMany(mappedBy = "formation", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Module> modules = new HashSet<>();
 
@@ -32,6 +35,14 @@ public class Formation {
 
     // Constructeurs
     public Formation() {
+    }
+
+    public Formation(String titre, String description, String type, String lienPhoto, Double duree) {
+        this.titre = titre;
+        this.description = description;
+        this.type = type;
+        this.lienPhoto = lienPhoto;
+        this.duree = duree;
     }
 
     public Formation(String titre, String description, String type, String lienPhoto) {
@@ -82,6 +93,15 @@ public class Formation {
         this.lienPhoto = lienPhoto;
     }
 
+    // Add getter and setter for duree
+    public Double getDuree() {
+        return duree;
+    }
+
+    public void setDuree(Double duree) {
+        this.duree = duree;
+    }
+
     public Set<Module> getModules() {
         return modules;
     }
@@ -107,5 +127,17 @@ public class Formation {
     public void removeModule(Module module) {
         modules.remove(module);
         module.setFormation(null);
+    }
+
+    @Override
+    public String toString() {
+        return "Formation{" +
+                "id=" + id +
+                ", titre='" + titre + '\'' +
+                ", description='" + description + '\'' +
+                ", type='" + type + '\'' +
+                ", lienPhoto='" + lienPhoto + '\'' +
+                ", duree=" + duree +
+                '}';
     }
 }

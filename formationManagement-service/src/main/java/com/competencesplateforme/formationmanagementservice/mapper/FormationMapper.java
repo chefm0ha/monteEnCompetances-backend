@@ -30,6 +30,7 @@ public class FormationMapper {
         dto.setDescription(formation.getDescription());
         dto.setType(formation.getType());
         dto.setLienPhoto(formation.getLienPhoto());
+        dto.setDuree(formation.getDuree());
 
         return dto;
     }
@@ -55,8 +56,37 @@ public class FormationMapper {
         formation.setDescription(dto.getDescription());
         formation.setType(dto.getType());
         formation.setLienPhoto(dto.getLienPhoto());
+        formation.setDuree(dto.getDuree());
 
         return formation;
+    }
+
+    public List<FormationSummaryDTO> toSummaryDTOList(List<Formation> formations) {
+        return formations.stream()
+                .map(this::toSummaryDTO)
+                .collect(Collectors.toList());
+    }
+
+    public FormationSummaryDTO toSummaryDTO(Formation formation) {
+        if (formation == null) {
+            return null;
+        }
+
+        FormationSummaryDTO summaryDTO = new FormationSummaryDTO();
+        summaryDTO.setId(formation.getId());
+        summaryDTO.setTitre(formation.getTitre());
+        summaryDTO.setType(formation.getType());
+        summaryDTO.setLienPhoto(formation.getLienPhoto());
+        summaryDTO.setDuree(formation.getDuree());
+
+        // Calculate the module count directly from the formation entity
+        if (formation.getModules() != null) {
+            summaryDTO.setNombreModules((long) formation.getModules().size());
+        } else {
+            summaryDTO.setNombreModules(0L);
+        }
+
+        return summaryDTO;
     }
 
     public void updateEntityFromDTO(FormationDTO dto, Formation formation) {
@@ -76,27 +106,14 @@ public class FormationMapper {
         if (dto.getLienPhoto() != null) {
             formation.setLienPhoto(dto.getLienPhoto());
         }
+        if (dto.getDuree() != null) {
+            formation.setDuree(dto.getDuree());
+        }
     }
 
     public List<FormationDTO> toDTOList(List<Formation> formations) {
         return formations.stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
-    }
-
-    public FormationSummaryDTO toSummaryDTO(Formation formation) {
-        if (formation == null) {
-            return null;
-        }
-
-        FormationSummaryDTO summaryDTO = new FormationSummaryDTO();
-        summaryDTO.setId(formation.getId());
-        summaryDTO.setTitre(formation.getTitre());
-        summaryDTO.setType(formation.getType());
-        summaryDTO.setLienPhoto(formation.getLienPhoto());
-
-        // Les statistiques sont généralement calculées ailleurs et définies séparément
-
-        return summaryDTO;
     }
 }

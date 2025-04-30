@@ -21,9 +21,6 @@ spring:
             - Path=/api-doc/auth/
           filters:
             - SetPath=/v3/api-docs
-
-        # Route for /api/collaborateurs/** to patient-service
-        - id: collaborateurs-service-route
 #---------------------------------------------------------------------------------------------------------------------#
 
         # Route for /api/collaborateurs/** to collaborateur
