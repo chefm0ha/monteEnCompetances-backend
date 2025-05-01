@@ -147,7 +147,6 @@ public class CollaborateurController {
         }
     }
 
-
     /**
      * Supprime un collaborateur
      * @param id L'ID du collaborateur
