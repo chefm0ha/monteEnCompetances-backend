@@ -38,11 +38,11 @@ CREATE TABLE users_notifications (
 
 CREATE TABLE formations (
                             id SERIAL PRIMARY KEY,
-                            titre VARCHAR(255),
+                            titre TEXT,
                             description TEXT,
                             type VARCHAR(50),
-                            lien_photo VARCHAR(255),
-                            duree DECIMAL(2,1)
+                            lien_photo TEXT,
+                            duree DECIMAL(5,1) DEFAULT 0.0
 );
 
 CREATE TABLE collaborateurs_formations (
@@ -64,13 +64,15 @@ CREATE TABLE supports (
                           id SERIAL PRIMARY KEY,
                           module_id INT REFERENCES modules(id) ON DELETE CASCADE,
                           type VARCHAR(50),
-                          lien TEXT
+                          lien TEXT,
+                          duree DECIMAL(5,1) DEFAULT 0.0
 );
 
 CREATE TABLE quizs (
                        id SERIAL PRIMARY KEY,
                        module_id INT REFERENCES modules(id) ON DELETE CASCADE,
-                       titre TEXT
+                       titre TEXT,
+                       duree DECIMAL(5,1) DEFAULT 0.0
 );
 
 CREATE TABLE questions (
@@ -114,5 +116,3 @@ WHERE NOT EXISTS (
     WHERE id = '223e4567-e89b-12d3-a456-426614174007'
        OR email = 'collaborateur@application.com'
 );
-
-ALTER TABLE formations ADD COLUMN lien_photo TEXT;

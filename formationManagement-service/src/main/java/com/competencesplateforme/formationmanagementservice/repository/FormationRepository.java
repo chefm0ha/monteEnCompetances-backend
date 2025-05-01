@@ -19,4 +19,8 @@ public interface FormationRepository extends JpaRepository<Formation, Integer> {
 
     @Query("SELECT DISTINCT f FROM Formation f LEFT JOIN FETCH f.modules")
     List<Formation> findAllWithModules();
+
+    @Query("SELECT f, COUNT(m) FROM Formation f LEFT JOIN f.modules m GROUP BY f.id")
+    List<Object[]> findAllWithModuleCount();
+
 }

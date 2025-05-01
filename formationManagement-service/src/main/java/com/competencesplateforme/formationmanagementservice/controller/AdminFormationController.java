@@ -87,6 +87,12 @@ public class AdminFormationController {
         return ResponseEntity.ok(formationDTOs);
     }
 
+    @GetMapping("/with-module-count")
+    public ResponseEntity<List<FormationWithModuleCountDTO>> getAllFormationsWithModuleCount() {
+        List<FormationWithModuleCountDTO> formations = formationService.getAllFormationsWithModuleCount();
+        return ResponseEntity.ok(formations);
+    }
+
     @GetMapping("/{id}")  //tested
     public ResponseEntity<FormationDTO> getFormationById(@PathVariable Integer id) {
         return formationService.getFormationById(id)
@@ -106,17 +112,8 @@ public class AdminFormationController {
         return ResponseEntity.ok(formationMapper.toDTOList(formations));
     }
 
-    @PostMapping //tested
-    public ResponseEntity<FormationDTO> createFormation(@RequestBody FormationDTO formationDTO) {
-        System.out.println(formationDTO);
-        Formation formation = formationMapper.toEntity(formationDTO);
-        System.out.println(formation);
-        Formation savedFormation = formationService.createFormation(formation);
-        return ResponseEntity.status(HttpStatus.CREATED).body(formationMapper.toDTO(savedFormation));
-    }
-
-    @PostMapping(value = "/with-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE) //tested
-    public ResponseEntity<FormationDTO> createFormationWithImage(
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<FormationDTO> createFormation(
             @RequestPart("formation") FormationDTO formationDTO,
             @RequestPart("image") MultipartFile imageFile) throws IOException {
 
@@ -125,18 +122,11 @@ public class AdminFormationController {
         return ResponseEntity.status(HttpStatus.CREATED).body(formationMapper.toDTO(savedFormation));
     }
 
-    @PutMapping("/{id}") //tested
-    public ResponseEntity<FormationDTO> updateFormation(@PathVariable Integer id, @RequestBody FormationDTO formationDTO) {
-        return formationService.updateFormation(id, formationMapper.toEntity(formationDTO))
-                .map(updatedFormation -> ResponseEntity.ok(formationMapper.toDTO(updatedFormation)))
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @PutMapping(value = "/{id}/with-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE) //tested
-    public ResponseEntity<FormationDTO> updateFormationWithImage(
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<FormationDTO> updateFormation(
             @PathVariable Integer id,
             @RequestPart("formation") FormationDTO formationDTO,
-            @RequestPart(value = "image", required = false) MultipartFile imageFile) throws IOException {
+            @RequestPart("image") MultipartFile imageFile) throws IOException {
 
         Formation formation = formationMapper.toEntity(formationDTO);
         return formationService.updateFormationWithImage(id, formation, imageFile)

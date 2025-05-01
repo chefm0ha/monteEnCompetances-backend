@@ -1,7 +1,9 @@
 package com.competencesplateforme.formationmanagementservice.service;
 
+import com.competencesplateforme.formationmanagementservice.dto.FormationWithModuleCountDTO;
 import com.competencesplateforme.formationmanagementservice.fileStorage.FileStorageException;
 import com.competencesplateforme.formationmanagementservice.fileStorage.FileStorageService;
+import com.competencesplateforme.formationmanagementservice.mapper.FormationMapper;
 import com.competencesplateforme.formationmanagementservice.model.Formation;
 import com.competencesplateforme.formationmanagementservice.repository.FormationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,17 +14,22 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class FormationService {
 
     private final FormationRepository formationRepository;
     private final FileStorageService fileStorageService;
+    private final FormationMapper formationMapper;
+
 
     @Autowired
-    public FormationService(FormationRepository formationRepository, FileStorageService fileStorageService) {
+    public FormationService(FormationRepository formationRepository, FileStorageService fileStorageService, FormationMapper formationMapper
+    ) {
         this.formationRepository = formationRepository;
         this.fileStorageService = fileStorageService;
+        this.formationMapper = formationMapper;
     }
 
     @Transactional(readOnly = true)
@@ -167,5 +174,11 @@ public class FormationService {
                     return true;
                 })
                 .orElse(false);
+    }
+
+    @Transactional(readOnly = true)
+    public List<FormationWithModuleCountDTO> getAllFormationsWithModuleCount() {
+        List<Object[]> results = formationRepository.findAllWithModuleCount();
+        return formationMapper.toFormationWithModuleCountDTOList(results);
     }
 }

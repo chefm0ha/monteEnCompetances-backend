@@ -2,6 +2,7 @@ package com.competencesplateforme.formationmanagementservice.mapper;
 
 import com.competencesplateforme.formationmanagementservice.dto.FormationDTO;
 import com.competencesplateforme.formationmanagementservice.dto.FormationSummaryDTO;
+import com.competencesplateforme.formationmanagementservice.dto.FormationWithModuleCountDTO;
 import com.competencesplateforme.formationmanagementservice.model.Formation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -114,6 +115,33 @@ public class FormationMapper {
     public List<FormationDTO> toDTOList(List<Formation> formations) {
         return formations.stream()
                 .map(this::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    public FormationWithModuleCountDTO toFormationWithModuleCountDTO(Formation formation, Long moduleCount) {
+        if (formation == null) {
+            return null;
+        }
+
+        FormationWithModuleCountDTO dto = new FormationWithModuleCountDTO();
+        dto.setId(formation.getId());
+        dto.setTitre(formation.getTitre());
+        dto.setDescription(formation.getDescription());
+        dto.setType(formation.getType());
+        dto.setLienPhoto(formation.getLienPhoto());
+        dto.setDuree(formation.getDuree());
+        dto.setNumberOfModules(moduleCount.intValue());
+
+        return dto;
+    }
+
+    public List<FormationWithModuleCountDTO> toFormationWithModuleCountDTOList(List<Object[]> results) {
+        return results.stream()
+                .map(result -> {
+                    Formation formation = (Formation) result[0];
+                    Long moduleCount = (Long) result[1];
+                    return toFormationWithModuleCountDTO(formation, moduleCount);
+                })
                 .collect(Collectors.toList());
     }
 }
