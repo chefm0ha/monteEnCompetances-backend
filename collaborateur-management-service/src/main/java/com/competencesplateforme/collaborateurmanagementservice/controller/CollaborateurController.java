@@ -130,7 +130,7 @@ public class CollaborateurController {
             return new ResponseEntity<>(collaborateurService.updateCollaborateur(collaborateur) ,
                     HttpStatus.NOT_FOUND);
         }else {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(HttpStatus.OK);
         }
     }
 
