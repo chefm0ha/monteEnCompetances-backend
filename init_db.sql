@@ -1,3 +1,4 @@
+
 -- Création des tables
 CREATE EXTENSION IF NOT EXISTS "pgcrypto"; -- pour UUID
 

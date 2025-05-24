@@ -1,5 +1,5 @@
 server:
-  port: 4001 # Gateway listens on port 4001
+  port: 5001 # Gateway listens on port 4001
 
 spring:
   cloud:
