@@ -1,7 +1,9 @@
 package com.competencesplateforme.formationmanagementservice.service;
 
+import com.competencesplateforme.formationmanagementservice.dto.SupportDTO;
 import com.competencesplateforme.formationmanagementservice.fileStorage.FileStorageException;
 import com.competencesplateforme.formationmanagementservice.fileStorage.FileStorageService;
+import com.competencesplateforme.formationmanagementservice.mapper.SupportMapper;
 import com.competencesplateforme.formationmanagementservice.model.Module;
 import com.competencesplateforme.formationmanagementservice.model.Support;
 import com.competencesplateforme.formationmanagementservice.repository.ModuleRepository;
@@ -12,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,14 +24,19 @@ public class SupportService {
     private final SupportRepository supportRepository;
     private final ModuleRepository moduleRepository;
     private final FileStorageService fileStorageService;
+    private final SupportMapper supportMapper;
+
+    private static final List<String> TYPES_VALIDES = Arrays.asList("PDF", "TEXTE", "VIDEO");
 
     @Autowired
     public SupportService(SupportRepository supportRepository,
                           ModuleRepository moduleRepository,
-                          FileStorageService fileStorageService) {
+                          FileStorageService fileStorageService,
+                          SupportMapper supportMapper) {
         this.supportRepository = supportRepository;
         this.moduleRepository = moduleRepository;
         this.fileStorageService = fileStorageService;
+        this.supportMapper = supportMapper;
     }
 
     /**
@@ -97,6 +105,9 @@ public class SupportService {
         return supportRepository.findById(id)
                 .map(existingSupport -> {
                     existingSupport.setType(updatedSupport.getType());
+                    existingSupport.setTitre(updatedSupport.getTitre());
+                    existingSupport.setDescription(updatedSupport.getDescription());
+                    existingSupport.setDuree(updatedSupport.getDuree());
 
                     // Si un nouveau lien est fourni, mettre à jour
                     if (updatedSupport.getLien() != null) {
@@ -115,6 +126,9 @@ public class SupportService {
         return supportRepository.findById(id)
                 .map(existingSupport -> {
                     existingSupport.setType(updatedSupport.getType());
+                    existingSupport.setTitre(updatedSupport.getTitre());
+                    existingSupport.setDescription(updatedSupport.getDescription());
+                    existingSupport.setDuree(updatedSupport.getDuree());
 
                     // Si un nouveau fichier est fourni, le traiter
                     if (file != null && !file.isEmpty()) {

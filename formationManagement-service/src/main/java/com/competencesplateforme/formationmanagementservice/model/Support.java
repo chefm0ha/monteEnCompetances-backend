@@ -14,8 +14,17 @@ public class Support {
     @JoinColumn(name = "module_id", nullable = false)
     private Module module;
 
+    @Column(length = 255)
+    private String titre;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
     @Column(length = 50)
     private String type;
+
+    @Column(name = "duree")
+    private Double duree;
 
     @Column(columnDefinition = "TEXT")
     private String lien;
@@ -24,8 +33,11 @@ public class Support {
     public Support() {
     }
 
-    public Support(String type, String lien) {
+    public Support(String titre, String description, String type, Double duree, String lien) {
+        this.titre = titre;
+        this.description = description;
         this.type = type;
+        this.duree = duree;
         this.lien = lien;
     }
 
@@ -46,12 +58,36 @@ public class Support {
         this.module = module;
     }
 
+    public String getTitre() {
+        return titre;
+    }
+
+    public void setTitre(String titre) {
+        this.titre = titre;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
     public String getType() {
         return type;
     }
 
     public void setType(String type) {
         this.type = type;
+    }
+
+    public Double getDuree() {
+        return duree;
+    }
+
+    public void setDuree(Double duree) {
+        this.duree = duree;
     }
 
     public String getLien() {

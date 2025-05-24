@@ -29,7 +29,10 @@ public class SupportMapper {
         if (support.getModule() != null) {
             dto.setModuleId(support.getModule().getId());
         }
+        dto.setTitre(support.getTitre());
+        dto.setDescription(support.getDescription());
         dto.setType(support.getType());
+        dto.setDuree(support.getDuree());
         dto.setLien(support.getLien());
 
         // Générer l'URL de téléchargement si un lien est disponible
@@ -47,7 +50,10 @@ public class SupportMapper {
 
         Support support = new Support();
         support.setId(dto.getId());
+        support.setTitre(dto.getTitre());
+        support.setDescription(dto.getDescription());
         support.setType(dto.getType());
+        support.setDuree(dto.getDuree());
         support.setLien(dto.getLien());
         // Le module est généralement défini séparément via le service
 
@@ -59,8 +65,17 @@ public class SupportMapper {
             return;
         }
 
+        if (dto.getTitre() != null) {
+            support.setTitre(dto.getTitre());
+        }
+        if (dto.getDescription() != null) {
+            support.setDescription(dto.getDescription());
+        }
         if (dto.getType() != null) {
             support.setType(dto.getType());
+        }
+        if (dto.getDuree() != null) {
+            support.setDuree(dto.getDuree());
         }
         if (dto.getLien() != null) {
             support.setLien(dto.getLien());

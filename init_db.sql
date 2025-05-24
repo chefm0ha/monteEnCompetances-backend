@@ -65,6 +65,8 @@ CREATE TABLE supports (
                           module_id INT REFERENCES modules(id) ON DELETE CASCADE,
                           type VARCHAR(50),
                           lien TEXT,
+                          titre VARCHAR(255),
+                          description TEXT,
                           duree DECIMAL(5,1) DEFAULT 0.0
 );
 

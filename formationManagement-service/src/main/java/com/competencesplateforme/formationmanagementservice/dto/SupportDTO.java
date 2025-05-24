@@ -4,7 +4,10 @@ public class SupportDTO {
 
     private Integer id;
     private Integer moduleId;
+    private String titre;
+    private String description;
     private String type;
+    private Double duree;
     private String lien;
     private String downloadUrl;
 
@@ -12,10 +15,13 @@ public class SupportDTO {
     public SupportDTO() {
     }
 
-    public SupportDTO(Integer id, Integer moduleId, String type, String lien) {
+    public SupportDTO(Integer id, Integer moduleId, String titre, String description, String type, Double duree, String lien) {
         this.id = id;
         this.moduleId = moduleId;
+        this.titre = titre;
+        this.description = description;
         this.type = type;
+        this.duree = duree;
         this.lien = lien;
     }
 
@@ -36,12 +42,36 @@ public class SupportDTO {
         this.moduleId = moduleId;
     }
 
+    public String getTitre() {
+        return titre;
+    }
+
+    public void setTitre(String titre) {
+        this.titre = titre;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
     public String getType() {
         return type;
     }
 
     public void setType(String type) {
         this.type = type;
+    }
+
+    public Double getDuree() {
+        return duree;
+    }
+
+    public void setDuree(Double duree) {
+        this.duree = duree;
     }
 
     public String getLien() {
