@@ -13,9 +13,10 @@ public class AdminJwtValidationGatewayFilterFactory extends
         AbstractGatewayFilterFactory<Object> {
 
     private final WebClient webClient;
+    private final String authServiceUrl = "http://localhost:4002";
 
-    public AdminJwtValidationGatewayFilterFactory(WebClient.Builder webClientBuilder,
-                                                  @Value("${auth.service.url}") String authServiceUrl) {
+    public AdminJwtValidationGatewayFilterFactory(WebClient.Builder webClientBuilder
+                                                  ) {
         this.webClient = webClientBuilder.baseUrl(authServiceUrl).build();
     }
 

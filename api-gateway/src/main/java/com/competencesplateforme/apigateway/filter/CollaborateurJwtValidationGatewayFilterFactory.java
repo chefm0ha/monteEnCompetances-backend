@@ -13,9 +13,9 @@ public class CollaborateurJwtValidationGatewayFilterFactory extends
         AbstractGatewayFilterFactory<Object> {
 
     private final WebClient webClient;
+    private final String authServiceUrl = "http://localhost:8082";
 
-    public CollaborateurJwtValidationGatewayFilterFactory(WebClient.Builder webClientBuilder,
-                                                  @Value("${auth.service.url}") String authServiceUrl) {
+    public CollaborateurJwtValidationGatewayFilterFactory(WebClient.Builder webClientBuilder) {
         this.webClient = webClientBuilder.baseUrl(authServiceUrl).build();
     }
 

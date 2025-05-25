@@ -119,3 +119,7 @@ WHERE NOT EXISTS (
     WHERE id = '223e4567-e89b-12d3-a456-426614174007'
        OR email = 'collaborateur@application.com'
 );
+
+----------------------- Notifications -----------------------------
+
+

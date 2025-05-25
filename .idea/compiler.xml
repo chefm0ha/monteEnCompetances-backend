@@ -9,9 +9,13 @@
         <module name="api-gateway" />
         <module name="auth-service" />
         <module name="formationManagement-service" />
+        <module name="notification-management-service" />
         <module name="collaborateur-management-service" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="notification-service" target="21" />
+    </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
@@ -19,6 +23,8 @@
       <module name="auth-service" options="-parameters" />
       <module name="collaborateur-management-service" options="-parameters" />
       <module name="formationManagement-service" options="-parameters" />
+      <module name="notification-management-service" options="-parameters" />
+      <module name="notification-service" options="-parameters" />
     </option>
   </component>
 </project>
