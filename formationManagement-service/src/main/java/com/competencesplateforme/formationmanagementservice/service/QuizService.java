@@ -1,5 +1,6 @@
 package com.competencesplateforme.formationmanagementservice.service;
 
+import com.competencesplateforme.formationmanagementservice.dto.QuestionDTO;
 import com.competencesplateforme.formationmanagementservice.model.Choix;
 import com.competencesplateforme.formationmanagementservice.model.Module;
 import com.competencesplateforme.formationmanagementservice.model.Question;
@@ -141,16 +142,12 @@ public class QuizService {
      */
     @Transactional(readOnly = true)
     public Map<String, Object> evaluateQuizAnswers(Integer quizId, Map<Integer, List<Integer>> userAnswers) {
-        // userAnswers est une map de questionId -> liste des choixId sélectionnés par l'utilisateur
-
-        // Récupérer le quiz avec toutes ses questions et tous les choix corrects
         Quiz quiz = quizRepository.findById(quizId).orElseThrow();
         Set<Question> questions = quiz.getQuestions();
 
         int totalQuestions = questions.size();
         int correctAnswers = 0;
 
-        // Pour chaque question, vérifier si les réponses de l'utilisateur sont correctes
         for (Question question : questions) {
             List<Integer> userChoices = userAnswers.getOrDefault(question.getId(), List.of());
             List<Choix> correctChoices = choixRepository.findCorrectChoixByQuestionId(question.getId());
@@ -162,7 +159,6 @@ public class QuizService {
             Set<Integer> userChoicesSet = userChoices.stream()
                     .collect(Collectors.toSet());
 
-            // La réponse est correcte si l'utilisateur a sélectionné exactement tous les choix corrects
             if (userChoicesSet.equals(correctChoicesIds)) {
                 correctAnswers++;
             }
@@ -172,12 +168,103 @@ public class QuizService {
                 ? (double) correctAnswers / totalQuestions * 100
                 : 0;
 
-        // Créer et retourner le résultat
+        // Use the quiz's own threshold instead of hardcoded 70%
+        Integer threshold = quiz.getSeuilReussite() != null ? quiz.getSeuilReussite() : 70;
+
         return Map.of(
                 "totalQuestions", totalQuestions,
                 "correctAnswers", correctAnswers,
                 "scorePercentage", scorePercentage,
-                "isPassed", scorePercentage >= 70 // Considérer le quiz réussi si le score est >= 70%
+                "isPassed", scorePercentage >= threshold,
+                "threshold", threshold
         );
+    }
+
+    /**
+     * Met à jour un quiz complet avec toutes ses données
+     */
+    @Transactional
+    public Optional<Quiz> updateCompleteQuiz(Integer id, Quiz updatedQuiz) {
+        return quizRepository.findById(id)
+                .map(existingQuiz -> {
+                    existingQuiz.setTitre(updatedQuiz.getTitre());
+                    existingQuiz.setSeuilReussite(updatedQuiz.getSeuilReussite());
+                    return quizRepository.save(existingQuiz);
+                });
+    }
+
+    /**
+     * Crée un quiz complet avec ses questions et choix
+     */
+    @Transactional
+    public Optional<Quiz> createCompleteQuiz(Integer moduleId, Quiz quiz, Set<QuestionDTO> questionsDTO) {
+        return moduleRepository.findById(moduleId)
+                .map(module -> {
+                    quiz.setModule(module);
+                    Quiz savedQuiz = quizRepository.save(quiz);
+
+                    // Créer les questions et leurs choix
+                    if (questionsDTO != null && !questionsDTO.isEmpty()) {
+                        for (QuestionDTO questionDTO : questionsDTO) {
+                            Question question = new Question(questionDTO.getContenu());
+                            question.setQuiz(savedQuiz);
+                            Question savedQuestion = questionRepository.save(question);
+
+                            // Créer les choix pour cette question
+                            if (questionDTO.getChoix() != null && !questionDTO.getChoix().isEmpty()) {
+                                List<Choix> choixList = questionDTO.getChoix().stream()
+                                        .map(choixDTO -> new Choix(choixDTO.getContenu(), choixDTO.getEstCorrect()))
+                                        .collect(Collectors.toList());
+
+                                choixList.forEach(choix -> choix.setQuestion(savedQuestion));
+                                choixRepository.saveAll(choixList);
+                            }
+                        }
+                    }
+
+                    return savedQuiz;
+                });
+    }
+
+    /**
+     * Met à jour un quiz complet avec ses questions et choix
+     */
+    @Transactional
+    public Optional<Quiz> updateCompleteQuiz(Integer id, Quiz updatedQuiz, Set<QuestionDTO> questionsDTO) {
+        return quizRepository.findById(id)
+                .map(existingQuiz -> {
+                    // Mettre à jour les propriétés du quiz
+                    existingQuiz.setTitre(updatedQuiz.getTitre());
+                    existingQuiz.setSeuilReussite(updatedQuiz.getSeuilReussite());
+
+                    Quiz savedQuiz = quizRepository.save(existingQuiz);
+
+                    // Pour une mise à jour complète, on pourrait supprimer et recréer les questions
+                    // Ou implémenter une logique plus sophistiquée de mise à jour
+                    // Cette approche simple supprime tout et recrée
+                    if (questionsDTO != null) {
+                        // Supprimer les anciennes questions (cascade supprimera les choix)
+                        questionRepository.deleteByQuizId(id);
+
+                        // Créer les nouvelles questions
+                        for (QuestionDTO questionDTO : questionsDTO) {
+                            Question question = new Question(questionDTO.getContenu());
+                            question.setQuiz(savedQuiz);
+                            Question savedQuestion = questionRepository.save(question);
+
+                            // Créer les choix pour cette question
+                            if (questionDTO.getChoix() != null && !questionDTO.getChoix().isEmpty()) {
+                                List<Choix> choixList = questionDTO.getChoix().stream()
+                                        .map(choixDTO -> new Choix(choixDTO.getContenu(), choixDTO.getEstCorrect()))
+                                        .collect(Collectors.toList());
+
+                                choixList.forEach(choix -> choix.setQuestion(savedQuestion));
+                                choixRepository.saveAll(choixList);
+                            }
+                        }
+                    }
+
+                    return savedQuiz;
+                });
     }
 }

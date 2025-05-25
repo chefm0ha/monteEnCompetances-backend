@@ -19,6 +19,9 @@ public class Quiz {
     @Column(columnDefinition = "TEXT")
     private String titre;
 
+    @Column(name = "seuil_reussite")
+    private Integer seuilReussite = 70; // Default to 70%
+
     @OneToMany(mappedBy = "quiz", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Question> questions = new HashSet<>();
 
@@ -62,6 +65,10 @@ public class Quiz {
     public void setQuestions(Set<Question> questions) {
         this.questions = questions;
     }
+
+    public Integer getSeuilReussite() { return seuilReussite; }
+
+    public void setSeuilReussite(Integer seuilReussite) { this.seuilReussite = seuilReussite; }
 
     public void addQuestion(Question question) {
         questions.add(question);

@@ -31,6 +31,7 @@ public class QuizMapper {
             dto.setModuleId(quiz.getModule().getId());
         }
         dto.setTitre(quiz.getTitre());
+        dto.setSeuilReussite(quiz.getSeuilReussite());
 
         return dto;
     }
@@ -53,7 +54,7 @@ public class QuizMapper {
         Quiz quiz = new Quiz();
         quiz.setId(dto.getId());
         quiz.setTitre(dto.getTitre());
-        // Le module est généralement défini séparément via le service
+        quiz.setSeuilReussite(dto.getSeuilReussite());
 
         return quiz;
     }
@@ -65,6 +66,9 @@ public class QuizMapper {
 
         if (dto.getTitre() != null) {
             quiz.setTitre(dto.getTitre());
+        }
+        if (dto.getSeuilReussite() != null) {
+            quiz.setSeuilReussite(dto.getSeuilReussite());
         }
     }
 

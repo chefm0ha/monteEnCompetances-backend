@@ -74,7 +74,8 @@ CREATE TABLE quizs (
                        id SERIAL PRIMARY KEY,
                        module_id INT REFERENCES modules(id) ON DELETE CASCADE,
                        titre TEXT,
-                       duree DECIMAL(5,1) DEFAULT 0.0
+                       duree DECIMAL(5,1) DEFAULT 0.0,
+                       seuil_reussite INTEGER DEFAULT 70
 );
 
 CREATE TABLE questions (

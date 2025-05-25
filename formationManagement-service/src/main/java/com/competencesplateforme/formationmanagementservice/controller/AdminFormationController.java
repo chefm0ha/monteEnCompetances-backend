@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -248,13 +249,6 @@ public class AdminFormationController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PutMapping("/quizzes/{id}")    // tested
-    public ResponseEntity<QuizDTO> updateQuiz(@PathVariable Integer id, @RequestBody QuizDTO quizDTO) {
-        return quizService.updateQuiz(id, quizMapper.toEntity(quizDTO))
-                .map(updatedQuiz -> ResponseEntity.ok(quizMapper.toDTO(updatedQuiz)))
-                .orElse(ResponseEntity.notFound().build());
-    }
-
     @DeleteMapping("/quizzes/{id}")     // tested
     public ResponseEntity<Void> deleteQuiz(@PathVariable Integer id) {
         boolean deleted = quizService.deleteQuiz(id);
@@ -332,6 +326,66 @@ public class AdminFormationController {
     public ResponseEntity<Void> deleteChoix(@PathVariable Integer id) {
         boolean deleted = choixService.deleteChoix(id);
         return deleted ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
+    }
+
+    // ======== QUIZ EVALUATION ========
+
+    @PostMapping("/quizzes/{quizId}/evaluate")
+    public ResponseEntity<Map<String, Object>> evaluateQuiz(
+            @PathVariable Integer quizId,
+            @RequestBody Map<Integer, List<Integer>> userAnswers) {
+
+        try {
+            Map<String, Object> result = quizService.evaluateQuizAnswers(quizId, userAnswers);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+// ======== UPDATED QUIZ MANAGEMENT ========
+
+    @PutMapping("/quizzes/{id}")    // Updated version
+    public ResponseEntity<QuizDTO> updateQuiz(@PathVariable Integer id, @RequestBody QuizDTO quizDTO) {
+        return quizService.updateCompleteQuiz(id, quizMapper.toEntity(quizDTO))
+                .map(updatedQuiz -> ResponseEntity.ok(quizMapper.toDTOWithQuestions(updatedQuiz)))
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+// ======== COMPLETE QUIZ OPERATIONS ========
+
+    @PostMapping("/modules/{moduleId}/quizzes/complete")
+    public ResponseEntity<QuizDTO> createCompleteQuiz(
+            @PathVariable Integer moduleId,
+            @RequestBody QuizDTO quizDTO) {
+
+        try {
+            Quiz quiz = quizMapper.toEntity(quizDTO);
+            Optional<Quiz> savedQuiz = quizService.createCompleteQuiz(moduleId, quiz, quizDTO.getQuestions());
+
+            return savedQuiz
+                    .map(q -> ResponseEntity.status(HttpStatus.CREATED).body(quizMapper.toDTOWithQuestions(q)))
+                    .orElse(ResponseEntity.badRequest().build());
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PutMapping("/quizzes/{id}/complete")
+    public ResponseEntity<QuizDTO> updateCompleteQuiz(
+            @PathVariable Integer id,
+            @RequestBody QuizDTO quizDTO) {
+
+        try {
+            Quiz quiz = quizMapper.toEntity(quizDTO);
+            Optional<Quiz> updatedQuiz = quizService.updateCompleteQuiz(id, quiz, quizDTO.getQuestions());
+
+            return updatedQuiz
+                    .map(q -> ResponseEntity.ok(quizMapper.toDTOWithQuestions(q)))
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     // ======== GESTION DES INSCRIPTIONS ========

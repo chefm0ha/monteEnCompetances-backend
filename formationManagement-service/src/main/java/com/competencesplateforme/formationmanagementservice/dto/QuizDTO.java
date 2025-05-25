@@ -8,16 +8,18 @@ public class QuizDTO {
     private Integer id;
     private Integer moduleId;
     private String titre;
+    private Integer seuilReussite;
     private Set<QuestionDTO> questions = new HashSet<>();
 
     // Constructeurs
     public QuizDTO() {
     }
 
-    public QuizDTO(Integer id, Integer moduleId, String titre) {
+    public QuizDTO(Integer id, Integer moduleId, String titre, Integer seuilReussite) {
         this.id = id;
         this.moduleId = moduleId;
         this.titre = titre;
+        this.seuilReussite = seuilReussite;
     }
 
     // Getters et Setters
@@ -44,6 +46,10 @@ public class QuizDTO {
     public void setTitre(String titre) {
         this.titre = titre;
     }
+
+    public Integer getSeuilReussite() { return seuilReussite; }
+
+    public void setSeuilReussite(Integer seuilReussite) { this.seuilReussite = seuilReussite; }
 
     public Set<QuestionDTO> getQuestions() {
         return questions;
