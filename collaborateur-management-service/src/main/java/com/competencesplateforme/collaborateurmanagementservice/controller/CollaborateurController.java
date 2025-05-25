@@ -3,8 +3,11 @@ package com.competencesplateforme.collaborateurmanagementservice.controller;
 import com.competencesplateforme.collaborateurmanagementservice.dto.CollaborateurDTO;
 import com.competencesplateforme.collaborateurmanagementservice.model.Collaborateur;
 import com.competencesplateforme.collaborateurmanagementservice.service.CollaborateurService;
+import com.competencesplateforme.collaborateurmanagementservice.service.NotificationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -24,11 +27,17 @@ public class CollaborateurController {
 
     private final CollaborateurService collaborateurService;
     private final PasswordEncoder passwordEncoder;
+    private final NotificationService notificationService;
+    private static final Logger logger = LoggerFactory.getLogger(CollaborateurController.class);
+
 
     @Autowired
-    public CollaborateurController(CollaborateurService collaborateurService ,PasswordEncoder passwordEncoder) {
+    public CollaborateurController(CollaborateurService collaborateurService ,PasswordEncoder passwordEncoder
+    , NotificationService notificationService) {
         this.collaborateurService = collaborateurService;
         this.passwordEncoder = passwordEncoder;
+        this.notificationService = notificationService;
+
     }
 
     /**
@@ -41,6 +50,15 @@ public class CollaborateurController {
     public ResponseEntity<?> createCollaborateur(@RequestBody CollaborateurDTO collaborateurDTO) {
         try {
             CollaborateurDTO createdCollaborateur = collaborateurService.createCollaborateur(collaborateurDTO);
+            // Envoyer notification au manager
+            sendAdminNotification(
+                    "Nouveau collaborateur ajouté",
+                    "Le collaborateur " + createdCollaborateur.getFirstName()
+                            + " " +
+                            createdCollaborateur.getLastName() +
+                             " " +
+                            " a été ajouté à votre équipe."
+            );
             return new ResponseEntity<>(createdCollaborateur, HttpStatus.CREATED);
         } catch (DataIntegrityViolationException ex) {
             String errorMessage = "Email " + collaborateurDTO.getEmail() + " already exists.";
@@ -136,6 +154,15 @@ public class CollaborateurController {
 
             try {
                 CollaborateurDTO updated = collaborateurService.updateCollaborateur(collaborateur);
+                // Envoyer notification au manager
+                sendAdminNotification(
+                        "Collaborateur Modifié",
+                        "Le collaborateur " + updated .getFirstName()
+                                + " " +
+                                updated .getLastName() +
+                                " " +
+                                " a été modifié par admministrateur."
+                );
                 return new ResponseEntity<>(updated, HttpStatus.OK);
             } catch (DataIntegrityViolationException ex) {
                 // Check if it's about the email
@@ -155,9 +182,55 @@ public class CollaborateurController {
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete Collaborateur - By ID")
     public ResponseEntity<Void> deleteCollaborateur(@PathVariable UUID id) {
+        Optional<Collaborateur> optionalCollaborateur = collaborateurService.getCollaborateurNotDtoById(id);
         boolean deleted = collaborateurService.deleteCollaborateur(id);
+        if(deleted && optionalCollaborateur.isPresent()) {
+            // Envoyer notification au manager
+            sendAdminNotification(
+                    "Nouveau collaborateur supprimé",
+                    "Le collaborateur " + optionalCollaborateur.get().getFirstName()
+                            + " " +
+                            optionalCollaborateur.get().getLastName() +
+                            " " +
+                            " a été supprimé de votre équipe."
+            );
+        }
         return deleted
                 ? new ResponseEntity<>(HttpStatus.NO_CONTENT)
                 : new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+
+
+    /**
+     * Envoie une notification via le service de notifications
+     */
+    private void sendNotification(String titre, String contenu, UUID userId) {
+        try {
+            notificationService.createNotification(titre, contenu, userId);
+        } catch (Exception e) {
+            // Log l'erreur mais ne bloque pas le processus principal
+            logger.warn("Impossible d'envoyer la notification à l'utilisateur {}: {}", userId, e.getMessage());
+        }
+    }
+
+    /**
+     * Envoie une notification à plusieurs utilisateurs
+     */
+    private void sendNotification(String titre, String contenu, List<UUID> userIds) {
+        try {
+            notificationService.createNotification(titre, contenu, userIds);
+        } catch (Exception e) {
+            logger.warn("Impossible d'envoyer la notification à {} utilisateurs: {}", userIds.size(), e.getMessage());
+        }
+    }
+
+    // Dans votre fonction privée du contrôleur
+    private void sendAdminNotification(String titre, String contenu) {
+        try {
+            notificationService.createAdminNotification(titre, contenu);
+            logger.debug("Notification admin envoyée: {}", titre);
+        } catch (Exception e) {
+            logger.warn("Impossible d'envoyer la notification admin: {}", e.getMessage());
+        }
     }
 }

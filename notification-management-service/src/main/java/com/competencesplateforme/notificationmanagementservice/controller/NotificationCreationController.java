@@ -5,6 +5,8 @@ import com.competencesplateforme.notificationmanagementservice.dto.CreateNotific
 import com.competencesplateforme.notificationmanagementservice.dto.NotificationDto;
 import com.competencesplateforme.notificationmanagementservice.service.NotificationCreationService;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +20,8 @@ import java.util.UUID;
 public class NotificationCreationController {
 
     private final NotificationCreationService notificationCreationService;
+    private static final Logger logger = LoggerFactory.getLogger(NotificationCreationController.class);
+
 
     public NotificationCreationController(NotificationCreationService notificationCreationService) {
         this.notificationCreationService = notificationCreationService;
@@ -103,5 +107,31 @@ public class NotificationCreationController {
 
         List<NotificationDto> createdNotifications = notificationCreationService.createBatchNotifications(requests);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdNotifications);
+    }
+
+    /**
+     * POST /api/notifications/create/admin-broadcast
+     * Crée une notification spécifiquement pour l'administrateur système
+     */
+    @PostMapping("/admin-broadcast")
+    public ResponseEntity<NotificationDto> createAdminBroadcastNotification(
+            @RequestParam String titre,
+            @RequestParam String contenu) {
+
+        try {
+            // ID fixe de l'administrateur système
+            UUID adminId = UUID.fromString("223e4567-e89b-12d3-a456-426614174006");
+
+            CreateNotificationRequest request = new CreateNotificationRequest(titre, contenu, List.of(adminId));
+            NotificationDto createdNotification = notificationCreationService.createNotification(request);
+
+            logger.info("Notification admin créée: '{}' pour l'administrateur: {}", titre, adminId);
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(createdNotification);
+
+        } catch (Exception e) {
+            logger.error("Erreur lors de la création de la notification admin: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 }

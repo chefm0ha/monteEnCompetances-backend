@@ -6,6 +6,8 @@ import com.competencesplateforme.formationmanagementservice.mapper.*;
 import com.competencesplateforme.formationmanagementservice.model.*;
 import com.competencesplateforme.formationmanagementservice.model.Module;
 import com.competencesplateforme.formationmanagementservice.service.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
@@ -39,6 +41,9 @@ public class CollaborateurFormationController {
     private final QuizMapper quizMapper;
     private final QuestionMapper questionMapper;
     private final CollaborateurFormationMapper collaborateurFormationMapper;
+    private static final Logger logger = LoggerFactory.getLogger(CollaborateurFormationController.class);
+    private final NotificationService notificationService;
+
 
     @Autowired
     public CollaborateurFormationController(
@@ -53,7 +58,8 @@ public class CollaborateurFormationController {
             SupportMapper supportMapper,
             QuizMapper quizMapper,
             QuestionMapper questionMapper,
-            CollaborateurFormationMapper collaborateurFormationMapper) {
+            CollaborateurFormationMapper collaborateurFormationMapper ,
+            NotificationService notificationService) {
         this.formationService = formationService;
         this.moduleService = moduleService;
         this.supportService = supportService;
@@ -66,6 +72,7 @@ public class CollaborateurFormationController {
         this.quizMapper = quizMapper;
         this.questionMapper = questionMapper;
         this.collaborateurFormationMapper = collaborateurFormationMapper;
+        this.notificationService = notificationService;
     }
 
     // ======== CONSULTATION DES FORMATIONS ========
@@ -200,6 +207,18 @@ public class CollaborateurFormationController {
                         newProgress = new BigDecimal("100.00");
                     }
 
+                    // Notifications
+                    sendNotification(
+                            "Quiz terminé",
+                            "Vous avez terminé le quiz '" + quiz.getTitre() + "'. Votre progression: " + newProgress + "%",
+                            collaborateurId
+                    );
+
+                    sendAdminNotification(
+                            "Quiz soumis par un collaborateur",
+                            "Le collaborateur " + collaborateurId + " a soumis le quiz '" + quiz.getTitre() + "' (Formation ID: " + formationId + ")"
+                    );
+
                     collaborateurFormationService.updateProgress(collaborateurId, formationId, newProgress);
                 });
 
@@ -213,14 +232,28 @@ public class CollaborateurFormationController {
             @RequestBody BigDecimal newProgress) {
 
         return collaborateurFormationService.updateProgress(collaborateurId, formationId, newProgress)
-                .map(inscription -> ResponseEntity.ok(collaborateurFormationMapper.toDTO(inscription)))
+                .map(inscription -> {
+                    // Notifications
+                    sendNotification(
+                            "Progression mise à jour",
+                            "Votre progression dans la formation (ID: " + formationId + ") a été mise à jour à " + newProgress + "%",
+                            collaborateurId
+                    );
+
+                    sendAdminNotification(
+                            "Progression modifiée",
+                            "Progression du collaborateur " + collaborateurId + " mise à jour à " + newProgress + "% (Formation ID: " + formationId + ")"
+                    );
+
+                    return ResponseEntity.ok(collaborateurFormationMapper.toDTO(inscription));
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 
     // ======== CERTIFICATS ========
 
     @GetMapping("/certificat/{collaborateurId}/{formationId}")
-    public ResponseEntity<ByteArrayResource> downloadCertificat(
+    public ResponseEntity<ByteArrayResource> downloadCertificate(
             @PathVariable UUID collaborateurId,
             @PathVariable Integer formationId) {
 
@@ -244,6 +277,17 @@ public class CollaborateurFormationController {
         // Générer le certificat s'il n'est pas déjà généré
         if (!inscription.getIsCertificationGenerated()) {
             collaborateurFormationService.generateCertificate(collaborateurId, formationId);
+            // Notifications lors de la génération du certificat
+            sendNotification(
+                    "Certificat généré ! 🎓",
+                    "Félicitations ! Votre certificat pour la formation '" + inscription.getFormation().getTitre() + "' est maintenant disponible au téléchargement.",
+                    collaborateurId
+            );
+
+            sendAdminNotification(
+                    "Certificat généré",
+                    "Un certificat a été généré pour le collaborateur " + collaborateurId + " (Formation: " + inscription.getFormation().getTitre() + ", ID: " + formationId + ")"
+            );
         }
 
         // Créer un certificat simple en HTML
@@ -293,5 +337,42 @@ public class CollaborateurFormationController {
                 .contentLength(certificatBytes.length)
                 .contentType(MediaType.TEXT_HTML)
                 .body(resource);
+    }
+
+
+
+    //------- Notification Functions ---------------//
+
+    /**
+     * Envoie une notification via le service de notifications
+     */
+    private void sendNotification(String titre, String contenu, UUID userId) {
+        try {
+            notificationService.createNotification(titre, contenu, userId);
+        } catch (Exception e) {
+            // Log l'erreur mais ne bloque pas le processus principal
+            logger.warn("Impossible d'envoyer la notification à l'utilisateur {}: {}", userId, e.getMessage());
+        }
+    }
+
+    /**
+     * Envoie une notification à plusieurs utilisateurs
+     */
+    private void sendNotification(String titre, String contenu, List<UUID> userIds) {
+        try {
+            notificationService.createNotification(titre, contenu, userIds);
+        } catch (Exception e) {
+            logger.warn("Impossible d'envoyer la notification à {} utilisateurs: {}", userIds.size(), e.getMessage());
+        }
+    }
+
+    // Dans votre fonction privée du contrôleur
+    private void sendAdminNotification(String titre, String contenu) {
+        try {
+            notificationService.createAdminNotification(titre, contenu);
+            logger.debug("Notification admin envoyée: {}", titre);
+        } catch (Exception e) {
+            logger.warn("Impossible d'envoyer la notification admin: {}", e.getMessage());
+        }
     }
 }

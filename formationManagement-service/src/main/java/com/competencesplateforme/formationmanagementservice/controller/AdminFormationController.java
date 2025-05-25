@@ -6,6 +6,8 @@ import com.competencesplateforme.formationmanagementservice.mapper.*;
 import com.competencesplateforme.formationmanagementservice.model.*;
 import com.competencesplateforme.formationmanagementservice.model.Module;
 import com.competencesplateforme.formationmanagementservice.service.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -42,6 +44,9 @@ public class AdminFormationController {
     private final ChoixMapper choixMapper;
     private final CollaborateurFormationMapper collaborateurFormationMapper;
     private final FileUploadMapper fileUploadMapper;
+    private static final Logger logger = LoggerFactory.getLogger(AdminFormationController.class);
+    private final NotificationService notificationService;
+
 
     @Autowired
     public AdminFormationController(
@@ -60,7 +65,8 @@ public class AdminFormationController {
             QuestionMapper questionMapper,
             ChoixMapper choixMapper,
             CollaborateurFormationMapper collaborateurFormationMapper,
-            FileUploadMapper fileUploadMapper) {
+            FileUploadMapper fileUploadMapper ,
+            NotificationService notificationService) {
         this.formationService = formationService;
         this.moduleService = moduleService;
         this.supportService = supportService;
@@ -77,6 +83,7 @@ public class AdminFormationController {
         this.choixMapper = choixMapper;
         this.collaborateurFormationMapper = collaborateurFormationMapper;
         this.fileUploadMapper = fileUploadMapper;
+        this.notificationService = notificationService;
     }
 
     // ======== GESTION DES FORMATIONS ========
@@ -120,6 +127,13 @@ public class AdminFormationController {
 
         Formation formation = formationMapper.toEntity(formationDTO);
         Formation savedFormation = formationService.createFormationWithImage(formation, imageFile);
+        // Envoyer notification au manager
+        sendAdminNotification(
+                "Nouvelle Formation ajoutée",
+                "Le Formation " + savedFormation.getTitre()
+                        + " " +
+                        " a été ajoutée ."
+        );
         return ResponseEntity.status(HttpStatus.CREATED).body(formationMapper.toDTO(savedFormation));
     }
 
@@ -130,14 +144,30 @@ public class AdminFormationController {
             @RequestPart("image") MultipartFile imageFile) throws IOException {
 
         Formation formation = formationMapper.toEntity(formationDTO);
+
         return formationService.updateFormationWithImage(id, formation, imageFile)
-                .map(updatedFormation -> ResponseEntity.ok(formationMapper.toDTO(updatedFormation)))
+                .map(updatedFormation -> {
+                    // Envoyer notification à l'admin après mise à jour réussie
+                    sendAdminNotification(
+                            "Formation mise à jour",
+                            "La formation '" + updatedFormation.getTitre() + "' a été mise à jour avec succès."
+                    );
+
+                    return ResponseEntity.ok(formationMapper.toDTO(updatedFormation));
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}") // Tested
     public ResponseEntity<Void> deleteFormation(@PathVariable Integer id) {
+        Optional<Formation> formation = formationService.getFormationById(id);
         boolean deleted = formationService.deleteFormation(id);
+        if(deleted && formation.isPresent()) {
+            sendAdminNotification(
+                    "Formation Supprimé",
+                    "La formation '" + formation.get().getTitre() + "' a été supprimée."
+            );
+        }
         return deleted ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
     }
 
@@ -167,21 +197,52 @@ public class AdminFormationController {
     public ResponseEntity<ModuleDTO> createModule(@PathVariable Integer formationId, @RequestBody ModuleDTO moduleDTO) {
         Module module = moduleMapper.toEntity(moduleDTO);
         return moduleService.createModule(formationId, module)
-                .map(savedModule -> ResponseEntity.status(HttpStatus.CREATED).body(moduleMapper.toDTO(savedModule)))
+                .map(savedModule -> {
+                    // Envoyer notification à l'admin après création réussie du module
+                    sendAdminNotification(
+                            "Nouveau module ajouté",
+                            "Le module '" + savedModule.getTitre() + "' a été ajouté à la formation ."
+                    );
+
+                    return ResponseEntity.status(HttpStatus.CREATED).body(moduleMapper.toDTO(savedModule));
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PutMapping("/modules/{id}") //tested
     public ResponseEntity<ModuleDTO> updateModule(@PathVariable Integer id, @RequestBody ModuleDTO moduleDTO) {
         return moduleService.updateModule(id, moduleMapper.toEntity(moduleDTO))
-                .map(updatedModule -> ResponseEntity.ok(moduleMapper.toDTO(updatedModule)))
+                .map(updatedModule -> {
+                    // Notification à l'admin après mise à jour réussie
+                    sendAdminNotification(
+                            "Module mis à jour",
+                            "Le module '" + updatedModule.getTitre() + "' (ID: " + id + ") a été mis à jour avec succès."
+                    );
+
+                    return ResponseEntity.ok(moduleMapper.toDTO(updatedModule));
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/modules/{id}") //tested
     public ResponseEntity<Void> deleteModule(@PathVariable Integer id) {
+        // Récupérer les infos du module avant suppression (optionnel)
+        Optional<Module> moduleToDelete = moduleService.getModuleById(id);
+
         boolean deleted = moduleService.deleteModule(id);
-        return deleted ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
+
+        if (deleted) {
+            // Notification à l'admin après suppression réussie
+            String moduleName = moduleToDelete.map(Module::getTitre).orElse("Module inconnu");
+            sendAdminNotification(
+                    "Module supprimé",
+                    "Le module '" + moduleName + "' (ID: " + id + ") a été supprimé du système."
+            );
+
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     // ======== GESTION DES SUPPORTS ========
@@ -200,7 +261,21 @@ public class AdminFormationController {
 
         Support support = supportMapper.toEntity(supportDTO);
         return supportService.createSupportWithFile(moduleId, support, file)
-                .map(savedSupport -> ResponseEntity.status(HttpStatus.CREATED).body(supportMapper.toDTO(savedSupport)))
+                .map(savedSupport -> {
+                    // Notification à l'admin après création réussie
+                    sendAdminNotification(
+                            "Nouveau support ajouté",
+                            String.format("Support '%s' ajouté au module (ID: %d).\n" +
+                                            "Fichier: %s\n" +
+                                            "Type: %s",
+                                    savedSupport.getTitre(),
+                                    moduleId,
+                                    file.getOriginalFilename(),
+                                    savedSupport.getType() != null ? savedSupport.getType() : "Non spécifié")
+                    );
+
+                    return ResponseEntity.status(HttpStatus.CREATED).body(supportMapper.toDTO(savedSupport));
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 
@@ -211,19 +286,61 @@ public class AdminFormationController {
             @RequestPart(value = "file", required = false) MultipartFile file) throws IOException {
 
         Support support = supportMapper.toEntity(supportDTO);
-        return (file != null)
-                ? supportService.updateSupportWithFile(id, support, file)
-                .map(updatedSupport -> ResponseEntity.ok(supportMapper.toDTO(updatedSupport)))
-                .orElse(ResponseEntity.notFound().build())
-                : supportService.updateSupport(id, support)
-                .map(updatedSupport -> ResponseEntity.ok(supportMapper.toDTO(updatedSupport)))
-                .orElse(ResponseEntity.notFound().build());
+
+        if (file != null) {
+            return supportService.updateSupportWithFile(id, support, file)
+                    .map(updatedSupport -> {
+                        // Notification pour mise à jour avec nouveau fichier
+                        sendAdminNotification(
+                                "Support mis à jour avec fichier",
+                                String.format("Support '%s' (ID: %d) mis à jour.\n" +
+                                                "Nouveau fichier: %s",
+                                        updatedSupport.getTitre(),
+                                        id,
+                                        file.getOriginalFilename())
+                        );
+
+                        return ResponseEntity.ok(supportMapper.toDTO(updatedSupport));
+                    })
+                    .orElse(ResponseEntity.notFound().build());
+        } else {
+            return supportService.updateSupport(id, support)
+                    .map(updatedSupport -> {
+                        // Notification pour mise à jour sans fichier
+                        sendAdminNotification(
+                                "Support mis à jour",
+                                String.format("Support '%s' (ID: %d) mis à jour (métadonnées uniquement).",
+                                        updatedSupport.getTitre(),
+                                        id)
+                        );
+
+                        return ResponseEntity.ok(supportMapper.toDTO(updatedSupport));
+                    })
+                    .orElse(ResponseEntity.notFound().build());
+        }
     }
 
     @DeleteMapping("/supports/{id}") //tested
     public ResponseEntity<Void> deleteSupport(@PathVariable Integer id) {
+        // Récupérer les infos du support avant suppression (optionnel)
+        Optional<Support> supportToDelete = supportService.getSupportById(id);
+
         boolean deleted = supportService.deleteSupport(id);
-        return deleted ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
+
+        if (deleted) {
+            // Notification à l'admin après suppression réussie
+            String supportName = supportToDelete.map(Support::getTitre).orElse("Support inconnu");
+            sendAdminNotification(
+                    "Support supprimé",
+                    String.format("Le support '%s' (ID: %d) a été supprimé du système.",
+                            supportName,
+                            id)
+            );
+
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     // ======== GESTION DES QUIZ ========
@@ -245,14 +362,42 @@ public class AdminFormationController {
     public ResponseEntity<QuizDTO> createQuiz(@PathVariable Integer moduleId, @RequestBody QuizDTO quizDTO) {
         Quiz quiz = quizMapper.toEntity(quizDTO);
         return quizService.createQuiz(moduleId, quiz)
-                .map(savedQuiz -> ResponseEntity.status(HttpStatus.CREATED).body(quizMapper.toDTO(savedQuiz)))
+                .map(savedQuiz -> {
+                    // Notification à l'admin après création réussie
+                    sendAdminNotification(
+                            "Nouveau quiz créé",
+                            String.format("Quiz '%s' ajouté au module (ID: %d).\n" +
+                                            "Quiz ID: %d" +
+                                    savedQuiz.getTitre(),
+                                    moduleId,
+                                    savedQuiz.getId())
+                    );
+                    return ResponseEntity.status(HttpStatus.CREATED).body(quizMapper.toDTO(savedQuiz));
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/quizzes/{id}")     // tested
     public ResponseEntity<Void> deleteQuiz(@PathVariable Integer id) {
+        // Récupérer les infos du quiz avant suppression (optionnel)
+        Optional<Quiz> quizToDelete = quizService.getQuizById(id);
+
         boolean deleted = quizService.deleteQuiz(id);
-        return deleted ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
+
+        if (deleted) {
+            // Notification à l'admin après suppression réussie
+            String quizName = quizToDelete.map(Quiz::getTitre).orElse("Quiz inconnu");
+            sendAdminNotification(
+                    "Quiz supprimé",
+                    String.format("Le quiz '%s' (ID: %d) a été supprimé du système.",
+                            quizName,
+                            id)
+            );
+
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     // ======== GESTION DES QUESTIONS ========
@@ -267,21 +412,58 @@ public class AdminFormationController {
     public ResponseEntity<QuestionDTO> createQuestion(@PathVariable Integer quizId, @RequestBody QuestionDTO questionDTO) {
         Question question = questionMapper.toEntity(questionDTO);
         return questionService.createQuestion(quizId, question)
-                .map(savedQuestion -> ResponseEntity.status(HttpStatus.CREATED).body(questionMapper.toDTO(savedQuestion)))
+                .map(savedQuestion -> {
+                    // Notification à l'admin après création réussie
+                    sendAdminNotification(
+                            "Nouvelle question ajoutée",
+                            String.format("Question ajoutée au quiz ( titre : %s).\n" +
+                                            "contenu : %s",
+                                    savedQuestion.getQuiz().getTitre() ,
+                                    savedQuestion.getContenu())
+                    );
+
+                    return ResponseEntity.status(HttpStatus.CREATED).body(questionMapper.toDTO(savedQuestion));
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PutMapping("/questions/{id}") //tested
     public ResponseEntity<QuestionDTO> updateQuestion(@PathVariable Integer id, @RequestBody QuestionDTO questionDTO) {
         return questionService.updateQuestion(id, questionMapper.toEntity(questionDTO))
-                .map(updatedQuestion -> ResponseEntity.ok(questionMapper.toDTO(updatedQuestion)))
+                .map(updatedQuestion -> {
+                    // Notification à l'admin après mise à jour réussie
+                    sendAdminNotification(
+                            "Question mise à jour",
+                            String.format("La question (ID: %d) a été mise à jour avec succès.",
+                                    id)
+                    );
+
+                    return ResponseEntity.ok(questionMapper.toDTO(updatedQuestion));
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/questions/{id}") //tested
     public ResponseEntity<Void> deleteQuestion(@PathVariable Integer id) {
+        // Récupérer les infos de la question avant suppression (optionnel)
+        Optional<Question> questionToDelete = questionService.getQuestionById(id);
+
         boolean deleted = questionService.deleteQuestion(id);
-        return deleted ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
+
+        if (deleted) {
+            // Notification à l'admin après suppression réussie
+            String questionText = questionToDelete.map(Question::getContenu).orElse("Question inconnue");
+            sendAdminNotification(
+                    "Question supprimée",
+                    String.format("La question '%s' (ID: %d) a été supprimée du système.",
+                            questionText.length() > 50 ? questionText.substring(0, 50) + "..." : questionText,
+                            id)
+            );
+
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     // ======== GESTION DES CHOIX ========
@@ -296,7 +478,21 @@ public class AdminFormationController {
     public ResponseEntity<ChoixDTO> createChoix(@PathVariable Integer questionId, @RequestBody ChoixDTO choixDTO) {
         Choix choix = choixMapper.toEntity(choixDTO);
         return choixService.createChoix(questionId, choix)
-                .map(savedChoix -> ResponseEntity.status(HttpStatus.CREATED).body(choixMapper.toDTO(savedChoix)))
+                .map(savedChoix -> {
+                    // Notification à l'admin après création réussie
+                    sendAdminNotification(
+                            "Nouveau choix de réponse ajouté",
+                            String.format("Choix '%s' ajouté à la question (ID: %d).\n" +
+                                            "Choix ID: %d\n" +
+                                            "Correct: %s",
+                                    savedChoix.getContenu(),
+                                    questionId,
+                                    savedChoix.getId(),
+                                    savedChoix.getEstCorrect() != null && savedChoix.getEstCorrect() ? "Oui" : "Non")
+                    );
+
+                    return ResponseEntity.status(HttpStatus.CREATED).body(choixMapper.toDTO(savedChoix));
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 
@@ -312,20 +508,55 @@ public class AdminFormationController {
             return ResponseEntity.notFound().build();
         }
 
+        // Notification à l'admin après création réussie
+        sendAdminNotification(
+                "Choix multiples ajoutés",
+                String.format("%d choix de réponses ont été ajoutés à la question (ID: %d).",
+                        savedChoix.size(),
+                        questionId)
+        );
+
         return ResponseEntity.status(HttpStatus.CREATED).body(choixMapper.toDTOList(savedChoix));
     }
 
     @PutMapping("/choix/{id}") //tested
     public ResponseEntity<ChoixDTO> updateChoix(@PathVariable Integer id, @RequestBody ChoixDTO choixDTO) {
         return choixService.updateChoix(id, choixMapper.toEntity(choixDTO))
-                .map(updatedChoix -> ResponseEntity.ok(choixMapper.toDTO(updatedChoix)))
+                .map(updatedChoix -> {
+                    // Notification à l'admin après mise à jour réussie
+                    sendAdminNotification(
+                            "Choix de réponse mis à jour",
+                            String.format("Le choix '%s' (ID: %d) a été mis à jour.",
+                                    updatedChoix.getContenu(),
+                                    id)
+                    );
+
+                    return ResponseEntity.ok(choixMapper.toDTO(updatedChoix));
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/choix/{id}") //tested
     public ResponseEntity<Void> deleteChoix(@PathVariable Integer id) {
+        // Récupérer les infos du choix avant suppression (optionnel)
+        Optional<Choix> choixToDelete = choixService.getChoixById(id);
+
         boolean deleted = choixService.deleteChoix(id);
-        return deleted ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
+
+        if (deleted) {
+            // Notification à l'admin après suppression réussie
+            String choixText = choixToDelete.map(Choix::getContenu).orElse("Choix inconnu");
+            sendAdminNotification(
+                    "Choix de réponse supprimé",
+                    String.format("Le choix '%s' (ID: %d) a été supprimé du système.",
+                            choixText.length() > 40 ? choixText.substring(0, 40) + "..." : choixText,
+                            id)
+            );
+
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     // ======== QUIZ EVALUATION ========
@@ -348,7 +579,16 @@ public class AdminFormationController {
     @PutMapping("/quizzes/{id}")    // Updated version
     public ResponseEntity<QuizDTO> updateQuiz(@PathVariable Integer id, @RequestBody QuizDTO quizDTO) {
         return quizService.updateCompleteQuiz(id, quizMapper.toEntity(quizDTO))
-                .map(updatedQuiz -> ResponseEntity.ok(quizMapper.toDTOWithQuestions(updatedQuiz)))
+                .map(updatedQuiz -> {
+                    // Notification à l'admin après mise à jour réussie
+                    sendAdminNotification(
+                            "Quiz mis à jour",
+                            String.format("Le quiz '%s' a été mis à jour avec succès.",
+                                    updatedQuiz.getTitre())
+                    );
+
+                    return ResponseEntity.ok(quizMapper.toDTOWithQuestions(updatedQuiz));
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 
@@ -364,7 +604,22 @@ public class AdminFormationController {
             Optional<Quiz> savedQuiz = quizService.createCompleteQuiz(moduleId, quiz, quizDTO.getQuestions());
 
             return savedQuiz
-                    .map(q -> ResponseEntity.status(HttpStatus.CREATED).body(quizMapper.toDTOWithQuestions(q)))
+                    .map(q -> {
+                        // Notification à l'admin après création réussie
+                        int questionCount = quizDTO.getQuestions() != null ? quizDTO.getQuestions().size() : 0;
+                        sendAdminNotification(
+                                "Quiz complet créé",
+                                String.format("Quiz complet '%s' créé dans le module (: %s).\n" +
+                                                "Quiz ID: %d\n" +
+                                                "Nombre de questions: %d\n" ,
+                                        q.getTitre(),
+                                        moduleService.getModuleById(moduleId).get().getTitre(),
+                                        q.getId(),
+                                        questionCount)
+                        );
+
+                        return ResponseEntity.status(HttpStatus.CREATED).body(quizMapper.toDTOWithQuestions(q));
+                    })
                     .orElse(ResponseEntity.badRequest().build());
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
@@ -381,7 +636,20 @@ public class AdminFormationController {
             Optional<Quiz> updatedQuiz = quizService.updateCompleteQuiz(id, quiz, quizDTO.getQuestions());
 
             return updatedQuiz
-                    .map(q -> ResponseEntity.ok(quizMapper.toDTOWithQuestions(q)))
+                    .map(q -> {
+                        // Notification à l'admin après mise à jour réussie
+                        int questionCount = quizDTO.getQuestions() != null ? quizDTO.getQuestions().size() : 0;
+                        sendAdminNotification(
+                                "Quiz complet mis à jour",
+                                String.format("Quiz complet '%s' (ID: %d) mis à jour avec succès.\n" +
+                                                "Nombre de questions: %d\n",
+                                        q.getTitre(),
+                                        id,
+                                        questionCount)
+                        );
+
+                        return ResponseEntity.ok(quizMapper.toDTOWithQuestions(q));
+                    })
                     .orElse(ResponseEntity.notFound().build());
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
@@ -402,7 +670,30 @@ public class AdminFormationController {
             @PathVariable UUID collaborateurId) {
 
         return collaborateurFormationService.inscrireCollaborateurAFormation(collaborateurId, formationId)
-                .map(inscription -> ResponseEntity.status(HttpStatus.CREATED).body(collaborateurFormationMapper.toDTO(inscription)))
+                .map(inscription -> {
+                    // Récupérer les infos de la formation (si possible)
+                    String formationTitle = formationService.getFormationById(formationId).get().getTitre() ;
+
+                    // Notification au collaborateur inscrit
+                    sendNotification(
+                            "Inscription à une formation",
+                            String.format("Félicitations ! Vous avez été inscrit(e) à la formation '%s'. " +
+                                            "Vous pouvez maintenant accéder au contenu de formation dans votre espace.",
+                                    formationTitle),
+                            collaborateurId
+                    );
+
+                    // Notification à l'administrateur
+                    sendAdminNotification(
+                            "Nouvelle inscription formation",
+                            String.format("Le collaborateur (ID: %s) a été inscrit à la formation '%s' (ID: %d).",
+                                    collaborateurId,
+                                    formationTitle,
+                                    formationId)
+                    );
+
+                    return ResponseEntity.status(HttpStatus.CREATED).body(collaborateurFormationMapper.toDTO(inscription));
+                })
                 .orElse(ResponseEntity.badRequest().build());
     }
 
@@ -411,8 +702,34 @@ public class AdminFormationController {
             @PathVariable Integer formationId,
             @PathVariable UUID collaborateurId) {
 
+        // Récupérer les infos avant désinscription
+        String formationTitle = formationService.getFormationById(formationId).get().getTitre() ;
+
         boolean desinscrit = collaborateurFormationService.desinscrireCollaborateurDeFormation(collaborateurId, formationId);
-        return desinscrit ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
+
+        if (desinscrit) {
+            // Notification au collaborateur désinscrit
+            sendNotification(
+                    "Désinscription de formation",
+                    String.format("Vous avez été désinscrit(e) de la formation '%s'. " +
+                                    "Vous n'avez plus accès au contenu de cette formation.",
+                            formationTitle),
+                    collaborateurId
+            );
+
+            // Notification à l'administrateur
+            sendAdminNotification(
+                    "Désinscription formation",
+                    String.format("Le collaborateur (ID: %s) a été désinscrit de la formation '%s' (ID: %d).",
+                            collaborateurId,
+                            formationTitle,
+                            formationId)
+            );
+
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @GetMapping("/{formationId}/stats") //tested
@@ -428,4 +745,42 @@ public class AdminFormationController {
 
         return ResponseEntity.ok(stats);
     }
+
+
+
+    //------- Notification Functions ---------------//
+
+    /**
+     * Envoie une notification via le service de notifications
+     */
+    private void sendNotification(String titre, String contenu, UUID userId) {
+        try {
+            notificationService.createNotification(titre, contenu, userId);
+        } catch (Exception e) {
+            // Log l'erreur mais ne bloque pas le processus principal
+            logger.warn("Impossible d'envoyer la notification à l'utilisateur {}: {}", userId, e.getMessage());
+        }
+    }
+
+    /**
+     * Envoie une notification à plusieurs utilisateurs
+     */
+    private void sendNotification(String titre, String contenu, List<UUID> userIds) {
+        try {
+            notificationService.createNotification(titre, contenu, userIds);
+        } catch (Exception e) {
+            logger.warn("Impossible d'envoyer la notification à {} utilisateurs: {}", userIds.size(), e.getMessage());
+        }
+    }
+
+    // Dans votre fonction privée du contrôleur
+    private void sendAdminNotification(String titre, String contenu) {
+        try {
+            notificationService.createAdminNotification(titre, contenu);
+            logger.debug("Notification admin envoyée: {}", titre);
+        } catch (Exception e) {
+            logger.warn("Impossible d'envoyer la notification admin: {}", e.getMessage());
+        }
+    }
+
 }
