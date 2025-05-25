@@ -2,11 +2,13 @@
 <project version="4">
   <component name="CompilerConfiguration">
     <annotationProcessing>
+      <profile default="true" name="Default" enabled="true" />
       <profile name="Maven default annotation processors profile" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="api-gateway" />
+        <module name="chatbot-service" />
         <module name="auth-service" />
         <module name="formationManagement-service" />
         <module name="notification-management-service" />
@@ -21,6 +23,7 @@
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="api-gateway" options="-parameters" />
       <module name="auth-service" options="-parameters" />
+      <module name="chatbot-service" options="-parameters" />
       <module name="collaborateur-management-service" options="-parameters" />
       <module name="formationManagement-service" options="-parameters" />
       <module name="notification-management-service" options="-parameters" />

@@ -1,0 +1,42 @@
+# Configuration pour l'environnement de développement
+server:
+  port: 4006
+
+spring:
+  application:
+    name: chatbot-service
+  profiles:
+    active: dev
+  cache:
+    type: simple
+
+# Configuration des services externes
+services:
+  formation:
+    base-url: http://localhost:4004
+    timeout: 10000
+
+# Configuration Gemini API (pour développement)
+gemini:
+  api:
+    key: AIzaSyDHEEKNAReddNBzTAg009-_tCS9O1bliq8
+    base-url: https://generativelanguage.googleapis.com
+    model: gemini-1.5-flash
+    timeout: 30000
+    max-tokens: 1500
+    temperature: 0.3
+
+# Configuration du chatbot
+chatbot:
+  max-context-length: 3000
+  default-response: "Je suis désolé, je rencontre des difficultés techniques. Pouvez-vous reformuler votre question ou réessayer dans quelques instants ?"
+  system-prompt-file: classpath:prompts/system-prompt.txt
+
+# Logging détaillé pour le développement
+logging:
+  level:
+    com.competencesplateforme.chatbotservice: DEBUG
+    org.springframework.web.client: DEBUG
+    org.springframework.cache: DEBUG
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"

@@ -783,4 +783,15 @@ public class AdminFormationController {
         }
     }
 
+
+    //---------- chatbot --------------//
+    @GetMapping("/complete")
+    public ResponseEntity<List<FormationDTO>> getAllFormationsComplete() {
+        List<Formation> formations = formationService.getAllFormationsWithModules();
+        List<FormationDTO> formationDTOs = formations.stream()
+                .map(formationMapper::toDTOWithModules)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(formationDTOs);
+    }
+
 }

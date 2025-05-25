@@ -10,6 +10,7 @@
         <option value="$PROJECT_DIR$/formationManagement-service/pom.xml" />
         <option value="$PROJECT_DIR$/notification-service/pom.xml" />
         <option value="$PROJECT_DIR$/notification-management-service/pom.xml" />
+        <option value="$PROJECT_DIR$/chatbot-service/pom.xml" />
       </list>
     </option>
     <option name="ignoredFiles">
