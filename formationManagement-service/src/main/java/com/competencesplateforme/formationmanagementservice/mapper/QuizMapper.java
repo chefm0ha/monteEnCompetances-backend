@@ -40,7 +40,7 @@ public class QuizMapper {
         QuizDTO dto = toDTO(quiz);
         if (dto != null && quiz.getQuestions() != null) {
             dto.setQuestions(quiz.getQuestions().stream()
-                    .map(questionMapper::toDTO)
+                    .map(questionMapper::toDTOWithChoix)
                     .collect(Collectors.toSet()));
         }
         return dto;
@@ -57,6 +57,16 @@ public class QuizMapper {
         quiz.setSeuilReussite(dto.getSeuilReussite());
 
         return quiz;
+    }
+
+    public List<QuizDTO> toDTOListWithQuestions(List<Quiz> quizzes) {
+        if (quizzes == null) {
+            return null;
+        }
+
+        return quizzes.stream()
+                .map(this::toDTOWithQuestions)
+                .collect(Collectors.toList());
     }
 
     public void updateEntityFromDTO(QuizDTO dto, Quiz quiz) {

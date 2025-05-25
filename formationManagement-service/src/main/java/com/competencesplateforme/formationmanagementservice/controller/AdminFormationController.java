@@ -345,10 +345,11 @@ public class AdminFormationController {
 
     // ======== GESTION DES QUIZ ========
 
-    @GetMapping("/modules/{moduleId}/quizzes") // tested
-    public ResponseEntity<List<QuizDTO>> getQuizzesByModule(@PathVariable Integer moduleId) {
-        List<Quiz> quizzes = quizService.getQuizzesByModuleId(moduleId);
-        return ResponseEntity.ok(quizMapper.toDTOList(quizzes));
+    @GetMapping("/modules/{moduleId}/quizzes")
+    public ResponseEntity<List<QuizDTO>> getQuizzesByModuleWithQuestions(@PathVariable Integer moduleId) {
+        List<Quiz> quizzes = quizService.getQuizzesByModuleIdWithQuestions(moduleId);
+        List<QuizDTO> quizDTOs = quizMapper.toDTOListWithQuestions(quizzes);
+        return ResponseEntity.ok(quizDTOs);
     }
 
     @GetMapping("/quizzes/{id}") //tested

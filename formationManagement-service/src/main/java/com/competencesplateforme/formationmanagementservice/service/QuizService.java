@@ -54,6 +54,10 @@ public class QuizService {
         return quizRepository.findById(id);
     }
 
+    public List<Quiz> getQuizzesByModuleIdWithQuestions(Integer moduleId) {
+        return quizRepository.findByModuleIdWithQuestionsAndChoices(moduleId);
+    }
+
     /**
      * Récupère les quiz d'un module
      */
