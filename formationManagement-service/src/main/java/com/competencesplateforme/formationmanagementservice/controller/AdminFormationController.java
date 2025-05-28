@@ -108,6 +108,12 @@ public class AdminFormationController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/{formationId}/modules") //tested
+    public ResponseEntity<List<ModuleDTO>> getModulesByFormation(@PathVariable Integer formationId) {
+        List<Module> modules = moduleService.getModulesByFormationId(formationId);
+        return ResponseEntity.ok(moduleMapper.toDTOList(modules));
+    }
+
     @GetMapping("/type/{type}") //tested
     public ResponseEntity<List<FormationDTO>> getFormationsByType(@PathVariable String type) {
         List<Formation> formations = formationService.getFormationsByType(type);
@@ -137,8 +143,34 @@ public class AdminFormationController {
         return ResponseEntity.status(HttpStatus.CREATED).body(formationMapper.toDTO(savedFormation));
     }
 
-    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    /**
+     * Met à jour une formation sans changer l'image
+     */
+    @PutMapping("/{id}")
     public ResponseEntity<FormationDTO> updateFormation(
+            @PathVariable Integer id,
+            @RequestBody FormationDTO formationDTO) {
+
+        Formation formation = formationMapper.toEntity(formationDTO);
+
+        return formationService.updateFormation(id, formation)
+                .map(updatedFormation -> {
+                    // Envoyer notification à l'admin après mise à jour réussie
+                    sendAdminNotification(
+                            "Formation mise à jour",
+                            "La formation '" + updatedFormation.getTitre() + "' a été mise à jour avec succès (sans modification d'image)."
+                    );
+
+                    return ResponseEntity.ok(formationMapper.toDTO(updatedFormation));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Met à jour une formation avec une nouvelle image
+     */
+    @PutMapping(value = "/{id}/with-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<FormationDTO> updateFormationWithImage(
             @PathVariable Integer id,
             @RequestPart("formation") FormationDTO formationDTO,
             @RequestPart("image") MultipartFile imageFile) throws IOException {
@@ -149,8 +181,11 @@ public class AdminFormationController {
                 .map(updatedFormation -> {
                     // Envoyer notification à l'admin après mise à jour réussie
                     sendAdminNotification(
-                            "Formation mise à jour",
-                            "La formation '" + updatedFormation.getTitre() + "' a été mise à jour avec succès."
+                            "Formation mise à jour avec image",
+                            String.format("La formation '%s' a été mise à jour avec succès.\n" +
+                                            "Nouvelle image: %s",
+                                    updatedFormation.getTitre(),
+                                    imageFile.getOriginalFilename())
                     );
 
                     return ResponseEntity.ok(formationMapper.toDTO(updatedFormation));
@@ -180,10 +215,11 @@ public class AdminFormationController {
 
     // ======== GESTION DES MODULES ========
 
-    @GetMapping("/{formationId}/modules") //tested
-    public ResponseEntity<List<ModuleDTO>> getModulesByFormation(@PathVariable Integer formationId) {
-        List<Module> modules = moduleService.getModulesByFormationId(formationId);
-        return ResponseEntity.ok(moduleMapper.toDTOList(modules));
+
+    @GetMapping("/all-modules")
+    public ResponseEntity<List<ModuleWithFormationDTO>> getAllModulesWithFormation() {
+        List<ModuleWithFormationDTO> modules = moduleService.getAllModulesWithFormationAndCounts();
+        return ResponseEntity.ok(modules);
     }
 
     @GetMapping("/modules/{id}")  // tested

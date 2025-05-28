@@ -1,5 +1,7 @@
 package com.competencesplateforme.formationmanagementservice.service;
 
+import com.competencesplateforme.formationmanagementservice.dto.ModuleWithFormationDTO;
+import com.competencesplateforme.formationmanagementservice.mapper.ModuleMapper;
 import com.competencesplateforme.formationmanagementservice.model.Formation;
 import com.competencesplateforme.formationmanagementservice.model.Module;
 import com.competencesplateforme.formationmanagementservice.repository.FormationRepository;
@@ -16,11 +18,13 @@ public class ModuleService {
 
     private final ModuleRepository moduleRepository;
     private final FormationRepository formationRepository;
+    private final ModuleMapper moduleMapper;
 
     @Autowired
-    public ModuleService(ModuleRepository moduleRepository, FormationRepository formationRepository) {
+    public ModuleService(ModuleRepository moduleRepository, FormationRepository formationRepository, ModuleMapper moduleMapper) {
         this.moduleRepository = moduleRepository;
         this.formationRepository = formationRepository;
+        this.moduleMapper = moduleMapper;
     }
 
     /**
@@ -53,6 +57,15 @@ public class ModuleService {
     @Transactional(readOnly = true)
     public List<Module> searchModulesByTitre(String titre) {
         return moduleRepository.findByTitreContainingIgnoreCase(titre);
+    }
+
+    /**
+     * Récupère tous les modules avec leurs informations de formation et compteurs
+     */
+    @Transactional(readOnly = true)
+    public List<ModuleWithFormationDTO> getAllModulesWithFormationAndCounts() {
+        List<Object[]> results = moduleRepository.findAllModulesWithFormationAndCounts();
+        return moduleMapper.toModuleWithFormationDTOList(results);
     }
 
     /**

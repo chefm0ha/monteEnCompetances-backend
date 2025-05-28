@@ -1,6 +1,7 @@
 package com.competencesplateforme.formationmanagementservice.mapper;
 
 import com.competencesplateforme.formationmanagementservice.dto.ModuleDTO;
+import com.competencesplateforme.formationmanagementservice.dto.ModuleWithFormationDTO;
 import com.competencesplateforme.formationmanagementservice.model.Module;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -83,6 +84,38 @@ public class ModuleMapper {
     public List<ModuleDTO> toDTOList(List<Module> modules) {
         return modules.stream()
                 .map(this::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    // Nouvelle méthode pour mapper les modules avec formation
+    public ModuleWithFormationDTO toModuleWithFormationDTO(Object[] result) {
+        if (result == null || result.length < 3) {
+            return null;
+        }
+
+        Module module = (Module) result[0];
+        String formationTitre = (String) result[1];
+        // HQL SIZE() function returns Integer, not Long
+        Integer nombreSupports = (Integer) result[2];
+
+        ModuleWithFormationDTO dto = new ModuleWithFormationDTO();
+        dto.setId(module.getId());
+        dto.setTitre(module.getTitre());
+        dto.setDescription(module.getDescription());
+
+        if (module.getFormation() != null) {
+            dto.setFormationId(module.getFormation().getId());
+            dto.setFormationTitre(formationTitre);
+        }
+
+        dto.setNombreSupports(nombreSupports != null ? nombreSupports : 0);
+
+        return dto;
+    }
+
+    public List<ModuleWithFormationDTO> toModuleWithFormationDTOList(List<Object[]> results) {
+        return results.stream()
+                .map(this::toModuleWithFormationDTO)
                 .collect(Collectors.toList());
     }
 }
