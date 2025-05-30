@@ -1,10 +1,17 @@
 package com.competencesplateforme.authservice.dto;
 
+import java.util.UUID;
+
 public class UserDTO {
+    private UUID id;
     private String email ;
     private String firstName;
     private String lastName;
     private String role ;
+
+    public UUID getId() { return id; }
+
+    public void setId(UUID id) { this.id = id; }
 
     public String getEmail() {
         return email;

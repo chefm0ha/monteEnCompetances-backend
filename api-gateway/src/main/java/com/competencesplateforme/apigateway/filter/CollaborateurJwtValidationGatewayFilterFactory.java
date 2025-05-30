@@ -13,7 +13,7 @@ public class CollaborateurJwtValidationGatewayFilterFactory extends
         AbstractGatewayFilterFactory<Object> {
 
     private final WebClient webClient;
-    private final String authServiceUrl = "http://localhost:8082";
+    private final String authServiceUrl = "http://localhost:4002";
 
     public CollaborateurJwtValidationGatewayFilterFactory(WebClient.Builder webClientBuilder) {
         this.webClient = webClientBuilder.baseUrl(authServiceUrl).build();
