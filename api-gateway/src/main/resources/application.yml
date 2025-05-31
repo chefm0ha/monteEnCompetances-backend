@@ -92,7 +92,7 @@ spring:
         - id: api-admin-notifications
           uri: http://localhost:4006
           predicates:
-            - Path=/api/chat
+            - Path=/api/chat/**
           filters:
             - CollaborateurJwtValidation
 
