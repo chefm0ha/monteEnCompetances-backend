@@ -74,7 +74,7 @@ spring:
         - id: api-admin-notifications
           uri: http://localhost:4005
           predicates:
-            - Path=/api/notifications/admin
+            - Path=/api/notifications/admin/**
           filters:
             - AdminJwtValidation
 
@@ -82,7 +82,7 @@ spring:
         - id: api-admin-notifications
           uri: http://localhost:4005
           predicates:
-            - Path=/api/notifications/user
+            - Path=/api/notifications/user/**
           filters:
             - CollaborateurJwtValidation
 
