@@ -14,7 +14,6 @@ import java.util.Map;
 @Slf4j
 @RestController
 @RequestMapping("/api/chat")
-@CrossOrigin(origins = "*") // À adapter selon vos besoins de sécurité
 public class ChatController {
 
     private final ChatService chatService;

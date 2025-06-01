@@ -9,6 +9,7 @@ public class ModuleDTO {
     private Integer formationId;
     private String titre;
     private String description;
+    private Integer ordre;
     private Set<SupportDTO> supports = new HashSet<>();
     private Set<QuizDTO> quizs = new HashSet<>();
 
@@ -21,6 +22,14 @@ public class ModuleDTO {
         this.formationId = formationId;
         this.titre = titre;
         this.description = description;
+    }
+
+    public ModuleDTO(Integer id, Integer formationId, String titre, String description, Integer ordre) {
+        this.id = id;
+        this.formationId = formationId;
+        this.titre = titre;
+        this.description = description;
+        this.ordre = ordre;
     }
 
     // Getters et Setters
@@ -71,4 +80,8 @@ public class ModuleDTO {
     public void setQuizs(Set<QuizDTO> quizs) {
         this.quizs = quizs;
     }
+
+    public Integer getOrdre() { return ordre; }
+
+    public void setOrdre(Integer ordre) { this.ordre = ordre; }
 }

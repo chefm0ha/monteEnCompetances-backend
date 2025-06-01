@@ -33,6 +33,7 @@ public class ModuleMapper {
         }
         dto.setTitre(module.getTitre());
         dto.setDescription(module.getDescription());
+        dto.setOrdre(module.getOrdre());
 
         return dto;
     }
@@ -63,6 +64,7 @@ public class ModuleMapper {
         module.setId(dto.getId());
         module.setTitre(dto.getTitre());
         module.setDescription(dto.getDescription());
+        module.setOrdre(dto.getOrdre());
         // La formation est généralement définie séparément via le service
 
         return module;
@@ -78,6 +80,9 @@ public class ModuleMapper {
         }
         if (dto.getDescription() != null) {
             module.setDescription(dto.getDescription());
+        }
+        if (dto.getOrdre() != null) {
+            module.setOrdre(dto.getOrdre());
         }
     }
 

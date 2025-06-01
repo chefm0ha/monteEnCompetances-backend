@@ -22,6 +22,9 @@ public class Module {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(name = "ordre")
+    private Integer ordre = 0;
+
     @OneToMany(mappedBy = "module", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Support> supports = new HashSet<>();
 
@@ -77,6 +80,10 @@ public class Module {
     public void setSupports(Set<Support> supports) {
         this.supports = supports;
     }
+
+    public Integer getOrdre() { return ordre; }
+
+    public void setOrdre(Integer ordre) { this.ordre = ordre; }
 
     public void addSupport(Support support) {
         supports.add(support);

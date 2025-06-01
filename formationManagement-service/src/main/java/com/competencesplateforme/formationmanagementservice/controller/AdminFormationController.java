@@ -6,6 +6,7 @@ import com.competencesplateforme.formationmanagementservice.mapper.*;
 import com.competencesplateforme.formationmanagementservice.model.*;
 import com.competencesplateforme.formationmanagementservice.model.Module;
 import com.competencesplateforme.formationmanagementservice.service.*;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -830,5 +831,70 @@ public class AdminFormationController {
                 .collect(Collectors.toList());
         return ResponseEntity.ok(formationDTOs);
     }
+
+    // ======== MODULE REORDERING ========
+
+    @PutMapping("/{formationId}/modules/reorder")
+    public ResponseEntity<?> reorderModules(
+            @PathVariable Integer formationId,
+            @RequestBody @Valid ModuleReorderRequestDTO request) {
+
+        try {
+            // Validate request
+            if (request.getModuleIds() == null || request.getModuleIds().isEmpty()) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "La liste des IDs de modules ne peut pas être vide"));
+            }
+
+            // Validate formation exists
+            Optional<Formation> formationOpt = formationService.getFormationById(formationId);
+            if (formationOpt.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            // Perform reordering
+            boolean success = moduleService.reorderModules(formationId, request.getModuleIds());
+
+            if (success) {
+                // Get updated modules to return
+                List<Module> updatedModules = moduleService.getModulesByFormationId(formationId);
+                List<ModuleDTO> moduleDTOs = moduleMapper.toDTOList(updatedModules);
+
+                // Send admin notification
+                sendAdminNotification(
+                        "Modules réorganisés",
+                        String.format("Les modules de la formation '%s' (ID: %d) ont été réorganisés. " +
+                                        "Nouveau ordre: %s",
+                                formationOpt.get().getTitre(),
+                                formationId,
+                                request.getModuleIds().toString())
+                );
+
+                return ResponseEntity.ok(Map.of(
+                        "success", true,
+                        "message", "Modules réorganisés avec succès",
+                        "modules", moduleDTOs
+                ));
+            } else {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(Map.of("error", "Échec de la réorganisation des modules"));
+            }
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Erreur lors de la réorganisation des modules: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Erreur interne du serveur"));
+        }
+    }
+
+    @GetMapping("/{formationId}/modules/ordered")
+    public ResponseEntity<List<ModuleDTO>> getOrderedModulesByFormation(@PathVariable Integer formationId) {
+        List<Module> modules = moduleService.getModulesByFormationId(formationId);
+        return ResponseEntity.ok(moduleMapper.toDTOList(modules));
+    }
+
 
 }

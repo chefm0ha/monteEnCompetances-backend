@@ -10,8 +10,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.IntStream;
 
 @Service
 public class ModuleService {
@@ -44,7 +47,7 @@ public class ModuleService {
     }
 
     /**
-     * Récupère les modules d'une formation
+     * Récupère les modules d'une formation (ordonnés)
      */
     @Transactional(readOnly = true)
     public List<Module> getModulesByFormationId(Integer formationId) {
@@ -76,6 +79,11 @@ public class ModuleService {
         return formationRepository.findById(formationId)
                 .map(formation -> {
                     module.setFormation(formation);
+                    // Set order to the next available position
+                    if (module.getOrdre() == null) {
+                        Integer nextOrder = moduleRepository.getNextOrderValue(formationId);
+                        module.setOrdre(nextOrder);
+                    }
                     return moduleRepository.save(module);
                 });
     }
@@ -89,6 +97,10 @@ public class ModuleService {
                 .map(existingModule -> {
                     existingModule.setTitre(updatedModule.getTitre());
                     existingModule.setDescription(updatedModule.getDescription());
+                    // Only update order if provided
+                    if (updatedModule.getOrdre() != null) {
+                        existingModule.setOrdre(updatedModule.getOrdre());
+                    }
                     return moduleRepository.save(existingModule);
                 });
     }
@@ -108,17 +120,48 @@ public class ModuleService {
 
     /**
      * Réorganise l'ordre des modules dans une formation
-     * Cette méthode peut être étendue selon vos besoins spécifiques
      */
     @Transactional
     public boolean reorderModules(Integer formationId, List<Integer> moduleIds) {
-        // Cette méthode est un exemple et devrait être adaptée
-        // selon la façon dont vous gérez l'ordre des modules
-        return formationRepository.findById(formationId)
-                .map(formation -> {
-                    // Logique de réorganisation à implémenter selon vos besoins
-                    return true;
-                })
-                .orElse(false);
+        // Validate formation exists
+        if (!formationRepository.existsById(formationId)) {
+            throw new IllegalArgumentException("Formation with ID " + formationId + " not found");
+        }
+
+        // Validate all modules belong to the formation
+        List<Module> modules = moduleRepository.findByFormationIdAndIdIn(formationId, moduleIds);
+
+        if (modules.size() != moduleIds.size()) {
+            throw new IllegalArgumentException("Some module IDs do not belong to the specified formation");
+        }
+
+        // Check for duplicates in moduleIds
+        Set<Integer> uniqueIds = new HashSet<>(moduleIds);
+        if (uniqueIds.size() != moduleIds.size()) {
+            throw new IllegalArgumentException("Duplicate module IDs found in the request");
+        }
+
+        // Update the order for each module
+        try {
+            IntStream.range(0, moduleIds.size())
+                    .forEach(index -> {
+                        Integer moduleId = moduleIds.get(index);
+                        Integer newOrder = index + 1; // Start from 1
+                        moduleRepository.updateModuleOrder(moduleId, newOrder);
+                    });
+
+            return true;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to reorder modules: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Valide que tous les modules appartiennent à la formation spécifiée
+     */
+    @Transactional(readOnly = true)
+    public boolean validateModulesBelongToFormation(Integer formationId, List<Integer> moduleIds) {
+        List<Module> modules = moduleRepository.findByFormationIdAndIdIn(formationId, moduleIds);
+        return modules.size() == moduleIds.size();
     }
 }

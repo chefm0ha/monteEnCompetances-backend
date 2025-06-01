@@ -57,8 +57,12 @@ CREATE TABLE modules (
                          id SERIAL PRIMARY KEY,
                          formation_id INT REFERENCES formations(id) ON DELETE CASCADE,
                          titre TEXT,
-                         description TEXT
+                         description TEXT,
+                         ordre INTEGER DEFAULT 0
 );
+
+-- Add index for performance on order queries
+CREATE INDEX idx_modules_formation_ordre ON modules(formation_id, ordre);
 
 CREATE TABLE supports (
                           id SERIAL PRIMARY KEY,
