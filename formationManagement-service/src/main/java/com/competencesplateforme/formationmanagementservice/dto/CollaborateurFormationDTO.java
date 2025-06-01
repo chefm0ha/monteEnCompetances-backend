@@ -15,6 +15,9 @@ public class CollaborateurFormationDTO {
     private String collaborateurPrenom;
     private String formationTitre;
     private String formationDescription;
+    private String formationLienPhoto;
+    private String formationType;
+    private Double formationDuree;
 
     // Constructeurs
     public CollaborateurFormationDTO() {
@@ -90,6 +93,30 @@ public class CollaborateurFormationDTO {
 
     public void setFormationDescription(String formationDescription) {
         this.formationDescription = formationDescription;
+    }
+
+    public String getFormationLienPhoto() {
+        return formationLienPhoto;
+    }
+
+    public void setFormationLienPhoto(String formationLienPhoto) {
+        this.formationLienPhoto = formationLienPhoto;
+    }
+
+    public String getFormationType() {
+        return formationType;
+    }
+
+    public void setFormationType(String formationType) {
+        this.formationType = formationType;
+    }
+
+    public Double getFormationDuree() {
+        return formationDuree;
+    }
+
+    public void setFormationDuree(Double formationDuree) {
+        this.formationDuree = formationDuree;
     }
 
     public String getCollaborateurFullName() {

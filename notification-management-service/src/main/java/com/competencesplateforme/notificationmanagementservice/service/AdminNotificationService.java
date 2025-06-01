@@ -153,10 +153,9 @@ public class AdminNotificationService {
         long totalNotifications = notificationRepository.count();
 
         // Compter celles vues par l'admin
-        long seenByAdmin = userNotificationRepository.findByUserIdOrderByCreatedAtDesc(adminId, Pageable.unpaged())
-                .getTotalElements();
+        long actuallySeenByAdmin = userNotificationRepository.countByUserIdAndSeenAtIsNotNull(adminId);
 
-        return totalNotifications - seenByAdmin;
+        return totalNotifications - actuallySeenByAdmin;
     }
 
     // Marque TOUTES les notifications du système comme vues pour l'admin

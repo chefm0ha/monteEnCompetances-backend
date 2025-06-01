@@ -25,6 +25,9 @@ public interface UserNotificationRepository extends JpaRepository<UserNotificati
     @Query("SELECT un FROM UserNotification un JOIN FETCH un.notification n WHERE un.userId = :userId ORDER BY n.createdAt DESC")
     Page<UserNotification> findByUserIdOrderByCreatedAtDesc(@Param("userId") UUID userId, Pageable pageable);
 
+    @Query("SELECT COUNT(un) FROM UserNotification un WHERE un.userId = :userId AND un.seenAt IS NOT NULL")
+    Long countByUserIdAndSeenAtIsNotNull(@Param("userId") UUID userId);
+
     // Find unseen notifications for a user
     @Query("SELECT un FROM UserNotification un JOIN FETCH un.notification n WHERE un.userId = :userId AND un.seenAt IS NULL ORDER BY n.createdAt DESC")
     List<UserNotification> findUnseenByUserId(@Param("userId") UUID userId);

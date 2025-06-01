@@ -30,6 +30,9 @@ public class CollaborateurFormationMapper {
         if (collaborateurFormation.getFormation() != null) {
             dto.setFormationTitre(collaborateurFormation.getFormation().getTitre());
             dto.setFormationDescription(collaborateurFormation.getFormation().getDescription());
+            dto.setFormationLienPhoto(collaborateurFormation.getFormation().getLienPhoto());
+            dto.setFormationType(collaborateurFormation.getFormation().getType());
+            dto.setFormationDuree(collaborateurFormation.getFormation().getDuree());
         }
 
         return dto;
