@@ -1,6 +1,7 @@
 package com.competencesplateforme.collaborateurmanagementservice.controller;
 
 import com.competencesplateforme.collaborateurmanagementservice.dto.CollaborateurDTO;
+import com.competencesplateforme.collaborateurmanagementservice.dto.UpdateCollaborateurProfileDTO;
 import com.competencesplateforme.collaborateurmanagementservice.model.Collaborateur;
 import com.competencesplateforme.collaborateurmanagementservice.service.CollaborateurService;
 import com.competencesplateforme.collaborateurmanagementservice.service.NotificationService;
@@ -231,6 +232,42 @@ public class CollaborateurController {
             logger.debug("Notification admin envoyée: {}", titre);
         } catch (Exception e) {
             logger.warn("Impossible d'envoyer la notification admin: {}", e.getMessage());
+        }
+    }
+
+    @PutMapping("/profile/{id}")
+    @Operation(summary = "Update collaborateur profile including position")
+    public ResponseEntity<?> updateCollaborateurProfile(
+            @PathVariable UUID id,
+            @RequestBody UpdateCollaborateurProfileDTO updateProfileDTO) {
+
+        Optional<Collaborateur> optionalCollaborateur = collaborateurService.getCollaborateurNotDtoById(id);
+
+        if (optionalCollaborateur.isPresent()) {
+            Collaborateur collaborateur = optionalCollaborateur.get();
+
+            if (updateProfileDTO.getFirstName() != null) {
+                collaborateur.setFirstName(updateProfileDTO.getFirstName());
+            }
+            if (updateProfileDTO.getLastName() != null) {
+                collaborateur.setLastName(updateProfileDTO.getLastName());
+            }
+            if (updateProfileDTO.getEmail() != null) {
+                collaborateur.setEmail(updateProfileDTO.getEmail());
+            }
+            if (updateProfileDTO.getPoste() != null) {
+                collaborateur.setPoste(updateProfileDTO.getPoste());
+            }
+
+            try {
+                CollaborateurDTO updated = collaborateurService.updateCollaborateur(collaborateur);
+                return new ResponseEntity<>(updated, HttpStatus.OK);
+            } catch (DataIntegrityViolationException ex) {
+                String errorMessage = "Email " + updateProfileDTO.getEmail() + " already exists.";
+                return new ResponseEntity<>(errorMessage, HttpStatus.CONFLICT);
+            }
+        } else {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
 }

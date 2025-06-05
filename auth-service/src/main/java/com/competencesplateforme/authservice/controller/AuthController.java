@@ -1,9 +1,10 @@
 package com.competencesplateforme.authservice.controller;
 
-import com.competencesplateforme.authservice.dto.LoginRequestDTO;
-import com.competencesplateforme.authservice.dto.LoginResponseDTO;
-import com.competencesplateforme.authservice.dto.UserDTO;
+import com.competencesplateforme.authservice.dto.*;
+import com.competencesplateforme.authservice.mapper.UserMapper;
 import com.competencesplateforme.authservice.service.AuthService;
+import com.competencesplateforme.authservice.service.UserService;
+import com.competencesplateforme.authservice.util.JwtUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
@@ -18,9 +19,13 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
+    private final UserService userService;
+    private final JwtUtil jwtUtil;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, UserService userService, JwtUtil jwtUtil) {
         this.authService = authService;
+        this.userService = userService;
+        this.jwtUtil = jwtUtil;
     }
 
     @Operation(summary = "Generate token on user login")
@@ -108,7 +113,40 @@ public class AuthController {
                 : ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
 
+    @PutMapping("/profile")
+    @Operation(summary = "Update user profile information")
+    public ResponseEntity<UserDTO> updateProfile(
+            @RequestHeader("Authorization") String authHeader,
+            @RequestBody UpdateProfileDTO updateProfileDTO) {
 
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        String token = authHeader.substring(7);
+        String email = jwtUtil.getUser(token);
+
+        return userService.updateUserProfile(email, updateProfileDTO)
+                .map(user -> ResponseEntity.ok(UserMapper.toDto(user)))
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PutMapping("/change-password")
+    @Operation(summary = "Change user password")
+    public ResponseEntity<Void> changePassword(
+            @RequestHeader("Authorization") String authHeader,
+            @RequestBody ChangePasswordDTO changePasswordDTO) {
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        String token = authHeader.substring(7);
+        String email = jwtUtil.getUser(token);
+
+        boolean success = userService.changePassword(email, changePasswordDTO);
+        return success ? ResponseEntity.ok().build() : ResponseEntity.badRequest().build();
+    }
 
 }
 

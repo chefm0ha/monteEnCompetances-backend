@@ -35,4 +35,7 @@ public interface ModuleRepository extends JpaRepository<Module, Integer> {
     // Get next order value for a formation
     @Query("SELECT COALESCE(MAX(m.ordre), 0) + 1 FROM Module m WHERE m.formation.id = :formationId")
     Integer getNextOrderValue(@Param("formationId") Integer formationId);
+
+    @Query("SELECT m FROM Module m WHERE m.formation.id = :formationId ORDER BY m.ordre ASC")
+    List<Module> findByFormationIdOrderByModuleOrder(@Param("formationId") Integer formationId);
 }

@@ -19,10 +19,8 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/collaborateur/formations")
@@ -43,6 +41,7 @@ public class CollaborateurFormationController {
     private final CollaborateurFormationMapper collaborateurFormationMapper;
     private static final Logger logger = LoggerFactory.getLogger(CollaborateurFormationController.class);
     private final NotificationService notificationService;
+    private final ProgressTrackingService progressTrackingService;
 
 
     @Autowired
@@ -59,7 +58,8 @@ public class CollaborateurFormationController {
             QuizMapper quizMapper,
             QuestionMapper questionMapper,
             CollaborateurFormationMapper collaborateurFormationMapper ,
-            NotificationService notificationService) {
+            NotificationService notificationService,
+            ProgressTrackingService progressTrackingService) {
         this.formationService = formationService;
         this.moduleService = moduleService;
         this.supportService = supportService;
@@ -73,6 +73,7 @@ public class CollaborateurFormationController {
         this.questionMapper = questionMapper;
         this.collaborateurFormationMapper = collaborateurFormationMapper;
         this.notificationService = notificationService;
+        this.progressTrackingService = progressTrackingService;
     }
 
     // ======== CONSULTATION DES FORMATIONS ========
@@ -173,56 +174,6 @@ public class CollaborateurFormationController {
         return quizService.getQuizById(id)
                 .map(quiz -> ResponseEntity.ok(quizMapper.toDTOWithQuestions(quiz)))
                 .orElse(ResponseEntity.notFound().build());
-    }
-
-    @PostMapping("/quizzes/{quizId}/submit")
-    public ResponseEntity<QuizResultDTO> submitQuizAnswers(
-            @PathVariable Integer quizId,
-            @RequestBody Map<Integer, List<Integer>> userAnswers,
-            @RequestParam UUID collaborateurId,
-            @RequestParam Integer formationId) {
-
-        // 1. Évaluer les réponses du quiz
-        Map<String, Object> quizResult = quizService.evaluateQuizAnswers(quizId, userAnswers);
-        Optional<Quiz> quizOpt = quizService.getQuizById(quizId);
-
-        if (quizOpt.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        Quiz quiz = quizOpt.get();
-        QuizResultDTO resultDTO = quizMapper.toResultDTO(quiz, quizResult);
-
-        // 2. Mettre à jour la progression du collaborateur
-        // Supposons que chaque quiz complété ajoute 20% à la progression
-        collaborateurFormationService.getFormationsForCollaborateur(collaborateurId).stream()
-                .filter(inscription -> inscription.getFormation().getId().equals(formationId))
-                .findFirst()
-                .ifPresent(inscription -> {
-                    BigDecimal currentProgress = inscription.getProgress();
-                    BigDecimal newProgress = currentProgress.add(new BigDecimal("20.00"));
-
-                    // Ne pas dépasser 100%
-                    if (newProgress.compareTo(new BigDecimal("100.00")) > 0) {
-                        newProgress = new BigDecimal("100.00");
-                    }
-
-                    // Notifications
-                    sendNotification(
-                            "Quiz terminé",
-                            "Vous avez terminé le quiz '" + quiz.getTitre() + "'. Votre progression: " + newProgress + "%",
-                            collaborateurId
-                    );
-
-                    sendAdminNotification(
-                            "Quiz soumis par un collaborateur",
-                            "Le collaborateur " + collaborateurId + " a soumis le quiz '" + quiz.getTitre() + "' (Formation ID: " + formationId + ")"
-                    );
-
-                    collaborateurFormationService.updateProgress(collaborateurId, formationId, newProgress);
-                });
-
-        return ResponseEntity.ok(resultDTO);
     }
 
     @PutMapping("/progress/{collaborateurId}/{formationId}")
@@ -374,5 +325,218 @@ public class CollaborateurFormationController {
         } catch (Exception e) {
             logger.warn("Impossible d'envoyer la notification admin: {}", e.getMessage());
         }
+    }
+
+    // ======== PROGRESS TRACKING ENDPOINTS ========
+
+    @PostMapping("/supports/{supportId}/mark-seen/{collaborateurId}")
+    public ResponseEntity<Map<String, Object>> markSupportAsSeen(
+            @PathVariable Integer supportId,
+            @PathVariable UUID collaborateurId) {
+
+        boolean marked = progressTrackingService.markSupportAsSeen(collaborateurId, supportId);
+
+        Map<String, Object> response = Map.of(
+                "success", marked,
+                "message", marked ? "Support marked as seen" : "Support already seen or error occurred"
+        );
+
+        if (marked) {
+            // Notification
+            sendNotification(
+                    "Contenu consulté ✓",
+                    "Vous avez consulté un nouveau contenu de formation.",
+                    collaborateurId
+            );
+        }
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/supports/{supportId}/is-seen/{collaborateurId}")
+    public ResponseEntity<Map<String, Object>> isSupportSeen(
+            @PathVariable Integer supportId,
+            @PathVariable UUID collaborateurId) {
+
+        boolean seen = progressTrackingService.isSupportSeen(collaborateurId, supportId);
+
+        return ResponseEntity.ok(Map.of("seen", seen));
+    }
+
+    @GetMapping("/modules/{moduleId}/is-unlocked/{collaborateurId}")
+    public ResponseEntity<Map<String, Object>> isModuleUnlocked(
+            @PathVariable Integer moduleId,
+            @PathVariable UUID collaborateurId) {
+
+        boolean unlocked = progressTrackingService.isModuleUnlocked(collaborateurId, moduleId);
+        boolean completed = progressTrackingService.isModuleCompleted(collaborateurId, moduleId);
+
+        return ResponseEntity.ok(Map.of(
+                "unlocked", unlocked,
+                "completed", completed
+        ));
+    }
+
+    @GetMapping("/{formationId}/module-progress/{collaborateurId}")
+    public ResponseEntity<Map<String, Object>> getFormationProgress(
+            @PathVariable Integer formationId,
+            @PathVariable UUID collaborateurId) {
+
+        List<Module> allModules = moduleService.getModulesByFormationId(formationId);
+
+        List<Map<String, Object>> moduleProgressList = allModules.stream()
+                .map(module -> {
+                    boolean unlocked = progressTrackingService.isModuleUnlocked(collaborateurId, module.getId());
+                    boolean completed = progressTrackingService.isModuleCompleted(collaborateurId, module.getId());
+                    boolean allSupportsSeenInModule = progressTrackingService.areAllSupportsSeenInModule(collaborateurId, module.getId());
+
+                    // Use HashMap instead of Map.of() to avoid type inference issues
+                    Map<String, Object> moduleData = new HashMap<>();
+                    moduleData.put("moduleId", module.getId());
+                    moduleData.put("moduleName", module.getTitre());
+                    moduleData.put("moduleOrder", module.getOrdre());
+                    moduleData.put("unlocked", unlocked);
+                    moduleData.put("completed", completed);
+                    moduleData.put("allSupportsWatched", allSupportsSeenInModule);
+
+                    return moduleData;
+                })
+                .collect(Collectors.toList());
+
+        BigDecimal overallProgress = progressTrackingService.calculateFormationProgress(collaborateurId, formationId);
+
+        Optional<Module> nextModule = progressTrackingService.getNextUnlockedModule(collaborateurId, formationId);
+
+        // Use HashMap for the response as well
+        Map<String, Object> response = new HashMap<>();
+        response.put("formationId", formationId);
+        response.put("overallProgress", overallProgress);
+        response.put("modules", moduleProgressList);
+
+        if (nextModule.isPresent()) {
+            Module next = nextModule.get();
+            Map<String, Object> nextModuleData = new HashMap<>();
+            nextModuleData.put("moduleId", next.getId());
+            nextModuleData.put("moduleName", next.getTitre());
+            nextModuleData.put("moduleOrder", next.getOrdre());
+            response.put("nextUnlockedModule", nextModuleData);
+        } else {
+            response.put("nextUnlockedModule", null);
+        }
+
+        return ResponseEntity.ok(response);
+    }
+
+    // ======== UPDATED QUIZ SUBMISSION ========
+
+    @PostMapping("/quizzes/{quizId}/submit")
+    public ResponseEntity<QuizResultDTO> submitQuizAnswers(
+            @PathVariable Integer quizId,
+            @RequestBody Map<Integer, List<Integer>> userAnswers,
+            @RequestParam UUID collaborateurId,
+            @RequestParam Integer formationId) {
+
+        // 1. Évaluer les réponses du quiz
+        Map<String, Object> quizResult = quizService.evaluateQuizAnswers(quizId, userAnswers);
+        Optional<Quiz> quizOpt = quizService.getQuizById(quizId);
+
+        if (quizOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Quiz quiz = quizOpt.get();
+        QuizResultDTO resultDTO = quizMapper.toResultDTO(quiz, quizResult);
+
+        // 2. If quiz passed, try to complete the module
+        Boolean isPassed = (Boolean) quizResult.get("isPassed");
+        if (isPassed != null && isPassed) {
+            Integer moduleId = quiz.getModule().getId();
+            Double scorePercentage = (Double) quizResult.get("scorePercentage");
+            BigDecimal score = BigDecimal.valueOf(scorePercentage);
+
+            boolean moduleCompleted = progressTrackingService.completeModule(collaborateurId, moduleId, score);
+
+            if (moduleCompleted) {
+                // Module completed successfully
+                sendNotification(
+                        "Module terminé ! 🎉",
+                        "Félicitations ! Vous avez terminé le module '" + quiz.getModule().getTitre() +
+                                "' avec un score de " + String.format("%.1f%%", scorePercentage),
+                        collaborateurId
+                );
+
+                // Check if next module is now available
+                Optional<Module> nextModule = progressTrackingService.getNextUnlockedModule(collaborateurId, formationId);
+                if (nextModule.isPresent()) {
+                    sendNotification(
+                            "Nouveau module débloqué 🔓",
+                            "Le module '" + nextModule.get().getTitre() + "' est maintenant disponible !",
+                            collaborateurId
+                    );
+                } else {
+                    // Check if all modules are completed
+                    BigDecimal formationProgress = progressTrackingService.calculateFormationProgress(collaborateurId, formationId);
+                    if (formationProgress.compareTo(new BigDecimal("100")) == 0) {
+                        sendNotification(
+                                "Formation terminée ! 🏆",
+                                "Félicitations ! Vous avez terminé toute la formation !",
+                                collaborateurId
+                        );
+                    }
+                }
+
+                sendAdminNotification(
+                        "Module terminé par un collaborateur",
+                        "Le collaborateur " + collaborateurId + " a terminé le module '" +
+                                quiz.getModule().getTitre() + "' avec un score de " + String.format("%.1f%%", scorePercentage)
+                );
+            }
+        } else {
+            // Quiz failed
+            sendNotification(
+                    "Quiz non réussi 📚",
+                    "Vous n'avez pas atteint le score minimum pour le quiz '" + quiz.getTitre() +
+                            "'. Révisez le contenu et réessayez !",
+                    collaborateurId
+            );
+        }
+
+        // 3. Update formation progress regardless of quiz result
+        collaborateurFormationService.getFormationsForCollaborateur(collaborateurId).stream()
+                .filter(inscription -> inscription.getFormation().getId().equals(formationId))
+                .findFirst()
+                .ifPresent(inscription -> {
+                    BigDecimal newFormationProgress = progressTrackingService.calculateFormationProgress(collaborateurId, formationId);
+                    collaborateurFormationService.updateProgress(collaborateurId, formationId, newFormationProgress);
+                });
+
+        return ResponseEntity.ok(resultDTO);
+    }
+
+    // ======== SUPPORT PROGRESS ENDPOINTS ========
+
+    @GetMapping("/modules/{moduleId}/supports-progress/{collaborateurId}")
+    public ResponseEntity<List<Map<String, Object>>> getSupportsProgressInModule(
+            @PathVariable Integer moduleId,
+            @PathVariable UUID collaborateurId) {
+
+        List<Support> allSupports = supportService.getSupportsByModuleId(moduleId);
+
+        List<Map<String, Object>> supportsProgress = allSupports.stream()
+                .map(support -> {
+                    boolean seen = progressTrackingService.isSupportSeen(collaborateurId, support.getId());
+
+                    // Use HashMap instead of Map.of() to avoid type inference issues
+                    Map<String, Object> supportData = new HashMap<>();
+                    supportData.put("supportId", support.getId());
+                    supportData.put("supportTitle", support.getTitre());
+                    supportData.put("supportType", support.getType());
+                    supportData.put("seen", seen);
+
+                    return supportData;
+                })
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(supportsProgress);
     }
 }

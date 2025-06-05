@@ -102,6 +102,27 @@ CREATE TABLE logout_tokens (
                                logout_date DATE NOT NULL
 );
 
+CREATE TABLE collaborateur_support_progress (
+                                                collaborateur_id UUID REFERENCES collaborateurs(user_id) ON DELETE CASCADE,
+                                                support_id INT REFERENCES supports(id) ON DELETE CASCADE,
+                                                seen_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                                PRIMARY KEY (collaborateur_id, support_id)
+);
+
+CREATE TABLE collaborateur_module_progress (
+                                               collaborateur_id UUID REFERENCES collaborateurs(user_id) ON DELETE CASCADE,
+                                               module_id INT REFERENCES modules(id) ON DELETE CASCADE,
+                                               is_completed BOOLEAN DEFAULT FALSE,
+                                               completed_at TIMESTAMP,
+                                               quiz_score DECIMAL(5,2), -- Store the quiz score that completed the module
+                                               PRIMARY KEY (collaborateur_id, module_id)
+);
+
+CREATE INDEX idx_collaborateur_support_progress_collaborateur ON collaborateur_support_progress(collaborateur_id);
+CREATE INDEX idx_collaborateur_support_progress_support ON collaborateur_support_progress(support_id);
+CREATE INDEX idx_collaborateur_module_progress_collaborateur ON collaborateur_module_progress(collaborateur_id);
+CREATE INDEX idx_collaborateur_module_progress_module ON collaborateur_module_progress(module_id);
+
 INSERT INTO "users" (id, email, password, role,first_name,last_name)
 SELECT '223e4567-e89b-12d3-a456-426614174006', 'admin@application.com',
        '$2b$12$7hoRZfJrRKD2nIm2vHLs7OBETy.LWenXXMLKf99W8M4PUwO6KB7fu', 'ADMIN',
