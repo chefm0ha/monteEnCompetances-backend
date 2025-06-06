@@ -4,6 +4,7 @@ import com.competencesplateforme.formationmanagementservice.model.CollaborateurF
 import com.competencesplateforme.formationmanagementservice.model.CollaborateurFormationId;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
@@ -31,4 +32,13 @@ public interface CollaborateurFormationRepository extends JpaRepository<Collabor
 
     @Query("SELECT AVG(cf.progress) FROM CollaborateurFormation cf WHERE cf.formation.id = :formationId")
     BigDecimal getAverageProgressByFormation(Integer formationId);
+
+    @Query("SELECT cf.progress, COUNT(cf) FROM CollaborateurFormation cf GROUP BY cf.progress")
+    List<Object[]> getFormationCompletionStats();
+
+    @Query("SELECT COUNT(DISTINCT cf.collaborateur.id) FROM CollaborateurFormation cf")
+    Long getTotalCollaborateursCount();
+
+    @Query("SELECT COUNT(cf) FROM CollaborateurFormation cf WHERE cf.formation.id = :formationId AND cf.progress >= 100.00")
+    Long countCompletedByFormationId(@Param("formationId") Integer formationId);
 }

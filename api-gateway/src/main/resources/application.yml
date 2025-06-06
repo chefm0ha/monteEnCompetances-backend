@@ -96,3 +96,19 @@ spring:
           filters:
             - CollaborateurJwtValidation
 
+        # Route for formation stats (admin only)
+        - id: formation-stats-route
+          uri: http://localhost:4004
+          predicates:
+            - Path=/api/admin/formations/stats/**
+          filters:
+            - AdminJwtValidation
+
+        # Route for collaborateur stats (admin only)
+        - id: collaborateur-stats-route
+          uri: http://localhost:4003
+          predicates:
+            - Path=/api/collaborateurs/stats/**
+          filters:
+            - StripPrefix=1
+            - AdminJwtValidation
